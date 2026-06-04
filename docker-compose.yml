@@ -1,0 +1,17 @@
+services:
+  inmobiliaria-crm:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inmobiliaria-crm-2026
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    env_file:
+      - .env
+    networks:
+      - crm-network
+
+networks:
+  crm-network:
+    external: true
