@@ -3,7 +3,7 @@ import Image from "next/image";
 
 const navigationItems = [
   {
-    href: "/dashboard",
+    href: "/",
     label: "Dashboard",
     icon: "/dashboard/icons/dashboard.png",
   },

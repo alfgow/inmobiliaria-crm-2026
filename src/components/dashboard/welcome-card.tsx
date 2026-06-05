@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { ContactSearchButton } from "@/components/dashboard/contact-search-button";
+
 export function WelcomeCard() {
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950 px-6 py-8 text-white shadow-2xl sm:px-10 sm:py-12">
@@ -21,23 +23,7 @@ export function WelcomeCard() {
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <Link
-            href="/contactos/nuevo"
-            className="group rounded-3xl border border-white/10 bg-white/[0.06] p-5 transition hover:-translate-y-1 hover:bg-white/[0.1]"
-          >
-            <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl text-zinc-950">
-              +
-            </div>
-
-            <h2 className="text-xl font-semibold">Nuevo Contacto</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">
-              Registra un prospecto, cliente o interesado.
-            </p>
-
-            <span className="mt-6 inline-flex text-sm font-medium text-white/80 group-hover:text-white">
-              Registrar contacto →
-            </span>
-          </Link>
+          <ContactSearchButton />
 
           <Link
             href="/inmuebles/nuevo"

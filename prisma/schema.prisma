@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../app/generated/prisma"
@@ -10,4 +5,223 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+model api_keys {
+  id           BigInt    @id(map: "idx_19222_primary") @default(autoincrement())
+  user_id      Decimal   @db.Decimal
+  name         String    @db.VarChar(255)
+  prefix       String    @db.VarChar(12)
+  key_hash     String    @unique(map: "idx_19222_api_keys_key_hash_unique") @db.VarChar(128)
+  allowed_ip   String?   @db.VarChar(45)
+  last_used_at DateTime? @db.Timestamptz(6)
+  created_at   DateTime? @db.Timestamptz(6)
+  updated_at   DateTime? @db.Timestamptz(6)
+
+  @@index([user_id], map: "idx_19222_api_keys_user_id_foreign")
+}
+
+model asesores {
+  id         BigInt    @id(map: "idx_19230_primary") @default(autoincrement())
+  nombre     String    @db.VarChar(255)
+  email      String    @unique(map: "idx_19230_email") @db.VarChar(255)
+  telefono   String?   @db.VarChar(50)
+  created_at DateTime? @db.Timestamptz(6)
+  updated_at DateTime? @db.Timestamptz(6)
+}
+
+model blogs {
+  id         BigInt    @id(map: "idx_19238_primary") @default(autoincrement())
+  autor_id   Decimal   @db.Decimal
+  titulo     String    @db.VarChar(200)
+  slug       String    @unique(map: "idx_19238_slug") @db.VarChar(200)
+  contenido  String
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @db.Timestamptz(6)
+
+  @@index([autor_id], map: "idx_19238_autor_id")
+}
+
+model codigos_postales {
+  id               BigInt  @id(map: "idx_19270_primary") @default(autoincrement())
+  d_codigo         String  @db.VarChar(5)
+  d_asenta         String  @db.VarChar(255)
+  d_tipo_asenta    String? @db.VarChar(100)
+  d_mnpio          String? @db.VarChar(150)
+  d_estado         String? @db.VarChar(150)
+  d_ciudad         String  @db.VarChar(255)
+  d_cp             String? @db.VarChar(10)
+  c_estado         String? @db.VarChar(5)
+  c_oficina        String? @db.VarChar(10)
+  c_cp             String? @db.VarChar(10)
+  c_tipo_asenta    String? @db.VarChar(5)
+  c_mnpio          String? @db.VarChar(5)
+  id_asenta_cpcons String? @db.VarChar(20)
+  d_zona           String? @db.VarChar(20)
+  c_cve_ciudad     String? @db.VarChar(10)
+}
+
+model comentarios {
+  id          BigInt    @id(map: "idx_19289_primary") @default(autoincrement())
+  contacto_id Decimal   @db.Decimal
+  comentario  String
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([contacto_id], map: "idx_19289_contacto_id")
+}
+
+model contactos {
+  id         BigInt                           @id(map: "idx_19302_primary") @default(autoincrement())
+  nombre     String                           @db.VarChar(100)
+  email      String?                          @db.VarChar(150)
+  telefono   String                           @unique(map: "idx_19302_telefono") @db.VarChar(20)
+  estado     Unsupported("contactos_estado")? @default(dbgenerated("'nuevo'::dbs14813645.contactos_estado"))
+  fuente     String?                          @default("Web") @db.VarChar(50)
+  created_at DateTime?                        @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?                        @db.Timestamptz(6)
+}
+
+model error_logs {
+  id              BigInt    @id(map: "idx_19311_primary") @default(autoincrement())
+  exception_class String    @db.VarChar(255)
+  message         String
+  file            String?   @db.VarChar(512)
+  line            BigInt?
+  trace           String?
+  status_code     Int?
+  url             String?
+  method          String?   @db.VarChar(20)
+  payload         String?
+  headers         String?
+  user_id         Decimal?  @db.Decimal
+  created_at      DateTime? @db.Timestamptz(6)
+  updated_at      DateTime? @db.Timestamptz(6)
+
+  @@index([user_id], map: "idx_19311_error_logs_user_id_foreign")
+}
+
+model inmueble_estatus {
+  id          Int         @id(map: "idx_19352_primary") @default(autoincrement())
+  nombre      String      @unique(map: "idx_19352_nombre") @db.VarChar(50)
+  descripcion String?     @db.VarChar(150)
+  color       String?     @default("#ffffff") @db.VarChar(20)
+  orden       BigInt?     @default(0)
+  inmuebles   inmuebles[]
+}
+
+model inmueble_imagenes {
+  id          BigInt    @id(map: "idx_19360_primary") @default(autoincrement())
+  disk        String    @default("s3") @db.VarChar(50)
+  path        String?   @db.VarChar(255)
+  url         String?   @db.VarChar(500)
+  metadata    String?
+  inmueble_id Decimal   @db.Decimal
+  s3_key      String    @db.VarChar(255)
+  orden       BigInt?   @default(0)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime? @db.Timestamptz(6)
+
+  @@index([inmueble_id], map: "idx_19360_inmueble_id")
+}
+
+model inmuebles {
+  id                       BigInt                             @id(map: "idx_19328_primary") @default(autoincrement())
+  asesor_id                Decimal                            @db.Decimal
+  titulo                   String                             @db.VarChar(200)
+  slug                     String                             @unique(map: "idx_19328_inmuebles_slug_unique") @db.VarChar(200)
+  destacado                Boolean                            @default(false)
+  descripcion              String?
+  precio                   Decimal                            @db.Decimal(12, 2)
+  direccion                String                             @db.VarChar(255)
+  latitud                  Decimal?                           @db.Decimal(10, 6)
+  longitud                 Decimal?                           @db.Decimal(10, 6)
+  colonia                  String?                            @db.VarChar(255)
+  municipio                String?                            @db.VarChar(255)
+  estado                   String?                            @db.VarChar(150)
+  codigo_postal            String?                            @db.VarChar(10)
+  tipo                     Unsupported("inmuebles_tipo")
+  operacion                Unsupported("inmuebles_operacion")
+  estatus_id               Int                                @default(1) @db.SmallInt
+  habitaciones             Int?                               @default(0) @db.SmallInt
+  banos                    Int?                               @default(0) @db.SmallInt
+  estacionamientos         Int?                               @default(0) @db.SmallInt
+  metros_cuadrados         Decimal?                           @default(0.00) @db.Decimal(10, 2)
+  superficie_construida    Decimal?                           @default(0.00) @db.Decimal(10, 2)
+  superficie_terreno       Decimal?                           @default(0.00) @db.Decimal(10, 2)
+  anio_construccion        Int?
+  video_url                String?                            @db.VarChar(255)
+  tour_virtual_url         String?                            @db.VarChar(255)
+  amenidades               String?
+  extras                   String?
+  tags                     String?
+  created_at               DateTime?                          @default(now()) @db.Timestamptz(6)
+  updated_at               DateTime?                          @db.Timestamptz(6)
+  requisitos_restricciones Json                               @default("{\"requisitos\": [], \"restricciones\": []}")
+  published_at             DateTime?                          @db.Timestamptz(6)
+  visible                  Boolean                            @default(true)
+  views                    Int                                @default(0)
+  seo_description          String?
+  inmueble_estatus         inmueble_estatus                   @relation(fields: [estatus_id], references: [id], onUpdate: Restrict, map: "inmuebles_ibfk_2")
+
+  @@index([asesor_id], map: "idx_19328_asesor_id")
+  @@index([estatus_id], map: "idx_19328_estatus_id")
+}
+
+model interacciones_ia {
+  id          BigInt    @id(map: "idx_19372_primary") @default(autoincrement())
+  contacto_id Decimal   @db.Decimal
+  payload     String
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([contacto_id], map: "idx_19372_contacto_id")
+}
+
+model intereses {
+  id          BigInt    @id(map: "idx_19380_primary") @default(autoincrement())
+  contacto_id Decimal   @db.Decimal
+  inmueble_id Decimal   @db.Decimal
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@unique([contacto_id, inmueble_id], map: "idx_19380_contacto_inmueble_unique")
+  @@index([inmueble_id], map: "idx_19380_inmueble_id")
+}
+
+model restricciones_inmueble {
+  id                             BigInt                                                    @id(map: "idx_19414_primary") @default(autoincrement())
+  id_inmueble                    Decimal                                                   @db.Decimal
+  acepta_mascotas                Unsupported("restricciones_inmueble_acepta_mascotas")?    @default(dbgenerated("'no'::dbs14813645.restricciones_inmueble_acepta_mascotas"))
+  acepta_ni_os                   Unsupported("restricciones_inmueble_acepta_niños")?      @default(dbgenerated("'no'::dbs14813645.\"restricciones_inmueble_acepta_niños\"")) @map("acepta_niños")
+  acepta_estudiantes             Unsupported("restricciones_inmueble_acepta_estudiantes")? @default(dbgenerated("'no'::dbs14813645.restricciones_inmueble_acepta_estudiantes"))
+  acepta_roomies                 Unsupported("restricciones_inmueble_acepta_roomies")?     @default(dbgenerated("'no'::dbs14813645.restricciones_inmueble_acepta_roomies"))
+  ingresos_minimos               Decimal?                                                  @db.Decimal(10, 2)
+  precio_poliza                  Decimal?                                                  @db.Decimal(10, 2)
+  requiere_comprobantes_ingresos Boolean?                                                  @default(true)
+  observaciones                  String?
+
+  @@index([id_inmueble], map: "idx_19414_id_inmueble")
+}
+
+model role_user {
+  user_id Decimal @db.Decimal
+  role_id Decimal @db.Decimal
+
+  @@id([user_id, role_id], map: "idx_19432_primary")
+  @@index([role_id], map: "idx_19432_role_id")
+}
+
+model roles {
+  id     BigInt @id(map: "idx_19428_primary") @default(autoincrement())
+  nombre String @unique(map: "idx_19428_nombre") @db.VarChar(50)
+}
+
+model users {
+  id             BigInt    @id(map: "idx_19444_primary") @default(autoincrement())
+  name           String    @db.VarChar(100)
+  email          String    @unique(map: "idx_19444_email") @db.VarChar(150)
+  role           String    @default("user") @db.VarChar(50)
+  is_active      Boolean   @default(true)
+  password       String    @db.VarChar(255)
+  remember_token String?   @db.VarChar(100)
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime? @db.Timestamptz(6)
 }

@@ -1,0 +1,530 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import {
+  ArrowLeft,
+  Bot,
+  Building2,
+  CalendarDays,
+  Clock3,
+  Mail,
+  MessageSquareText,
+  Phone,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
+
+import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "../../generated/prisma/client";
+
+export const dynamic = "force-dynamic";
+
+function formatDate(value: Date | null) {
+  if (!value) {
+    return "Sin fecha";
+  }
+
+  return new Intl.DateTimeFormat("es-MX", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(value);
+}
+
+function formatMoney(value: unknown) {
+  const amount = Number(value ?? 0);
+
+  return new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(amount) ? amount : 0);
+}
+
+function formatDimension(value: unknown) {
+  const amount = Number(value ?? 0);
+  return Number.isFinite(amount) ? `${amount.toLocaleString("es-MX")} m²` : "—";
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+type PageProps = {
+  params: Promise<{ id: string }>;
+};
+
+type TimelineItem = {
+  id: string;
+  type: "comentario" | "ia";
+  title: string;
+  body: string;
+  createdAt: Date | null;
+  accentClass: string;
+  icon: typeof MessageSquareText;
+};
+
+export default async function ContactDetailPage({ params }: PageProps) {
+  const { id } = await params;
+
+  let contactId: bigint;
+
+  try {
+    contactId = BigInt(id);
+  } catch {
+    notFound();
+  }
+
+  const contactIdDecimal = new Prisma.Decimal(contactId.toString());
+
+  const [
+    contact,
+    interests,
+    comments,
+    interactionsIa,
+    totalInterests,
+    totalComments,
+    totalIaInteractions,
+  ] = await Promise.all([
+    prisma.contactos.findFirst({
+      where: { id: contactId },
+      select: {
+        id: true,
+        nombre: true,
+        email: true,
+        telefono: true,
+        fuente: true,
+        created_at: true,
+        updated_at: true,
+      },
+    }),
+    prisma.intereses.findMany({
+      where: { contacto_id: contactIdDecimal },
+      orderBy: { created_at: "desc" },
+      select: {
+        inmueble_id: true,
+        created_at: true,
+      },
+    }),
+    prisma.comentarios.findMany({
+      where: { contacto_id: contactIdDecimal },
+      orderBy: { created_at: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        comentario: true,
+        created_at: true,
+      },
+    }),
+    prisma.interacciones_ia.findMany({
+      where: { contacto_id: contactIdDecimal },
+      orderBy: { created_at: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        payload: true,
+        created_at: true,
+      },
+    }),
+    prisma.intereses.count({
+      where: { contacto_id: contactIdDecimal },
+    }),
+    prisma.comentarios.count({
+      where: { contacto_id: contactIdDecimal },
+    }),
+    prisma.interacciones_ia.count({
+      where: { contacto_id: contactIdDecimal },
+    }),
+  ]);
+
+  if (!contact) {
+    notFound();
+  }
+
+  const propertyIds = interests.map((interest) =>
+    BigInt(interest.inmueble_id.toString()),
+  );
+
+  const properties =
+    propertyIds.length > 0
+      ? await prisma.inmuebles.findMany({
+          where: { id: { in: propertyIds } },
+          include: {
+            inmueble_estatus: true,
+          },
+        })
+      : [];
+
+  const propertyMap = new Map(
+    properties.map((property) => [property.id.toString(), property]),
+  );
+
+  const interestedProperties = interests
+    .map((interest) => {
+      const property = propertyMap.get(
+        BigInt(interest.inmueble_id.toString()).toString(),
+      );
+
+      if (!property) {
+        return null;
+      }
+
+      return {
+        property,
+        createdAt: interest.created_at,
+      };
+    })
+    .filter(
+      (
+        item,
+      ): item is {
+        property: (typeof properties)[number];
+        createdAt: Date | null;
+      } => item !== null,
+    );
+
+  const timeline: TimelineItem[] = [
+    ...comments.map((comment) => ({
+      id: `comentario-${comment.id.toString()}`,
+      type: "comentario" as const,
+      title: "Comentario registrado",
+      body: comment.comentario,
+      createdAt: comment.created_at,
+      accentClass: "border-sky-200 bg-sky-50 text-sky-700",
+      icon: MessageSquareText,
+    })),
+    ...interactionsIa.map((interaction) => ({
+      id: `ia-${interaction.id.toString()}`,
+      type: "ia" as const,
+      title: "Interacción IA",
+      body: interaction.payload,
+      createdAt: interaction.created_at,
+      accentClass: "border-violet-200 bg-violet-50 text-violet-700",
+      icon: Bot,
+    })),
+  ].sort((left, right) => {
+    const leftValue = left.createdAt?.getTime() ?? 0;
+    const rightValue = right.createdAt?.getTime() ?? 0;
+    return rightValue - leftValue;
+  });
+
+  const lastActivity =
+    timeline[0]?.createdAt ?? contact.updated_at ?? contact.created_at;
+
+  return (
+    <main className="relative isolate min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-slate-50 px-4 py-6 text-zinc-950 sm:px-6 lg:px-10">
+      <AnimatedDashboardBackground>
+        <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
+          <div className="flex items-center justify-between gap-4">
+            <Link
+              href="/contactos"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:text-slate-950"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Volver a contactos
+            </Link>
+
+            <div className="rounded-full border border-white/10 bg-zinc-950 px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] text-zinc-300 shadow-2xl">
+              Vista de contacto
+            </div>
+          </div>
+
+          <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950 px-6 py-8 text-white shadow-2xl sm:px-10 sm:py-10">
+            <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-3xl" />
+            <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-sky-500/20 blur-3xl" />
+
+            <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)] lg:items-end">
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] border border-white/10 bg-white/10 text-xl font-semibold text-white">
+                    {getInitials(contact.nombre)}
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-400">
+                      Contacto
+                    </p>
+                    <h1 className="mt-1 text-4xl font-semibold tracking-tight sm:text-6xl">
+                      {contact.nombre}
+                    </h1>
+                  </div>
+                </div>
+
+                <p className="max-w-2xl text-base leading-7 text-zinc-300 sm:text-lg">
+                  Consulta la información del contacto, sus propiedades de
+                  interés y el historial de interacciones en una sola vista.
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/90">
+                    {contact.fuente ?? "Sin fuente"}
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/90">
+                    {formatDate(lastActivity)}
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/90">
+                    {totalInterests} propiedades
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.06] p-5 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-zinc-950">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">
+                      Estado actual
+                    </p>
+                    <p className="mt-1 text-lg font-semibold text-white">
+                      Seguimiento activo
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Intereses", value: totalInterests },
+                    { label: "Comentarios", value: totalComments },
+                    { label: "IA", value: totalIaInteractions },
+                    {
+                      label: "Última actividad",
+                      value: formatDate(lastActivity),
+                      span: true,
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className={`rounded-2xl border border-white/10 bg-white/[0.04] p-3 ${
+                        item.span ? "col-span-2" : ""
+                      }`}
+                    >
+                      <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-400">
+                        {item.label}
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-white">
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white">
+                  <UserRound className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
+                    Información
+                  </p>
+                  <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
+                    Datos del contacto
+                  </h2>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                {[
+                  { label: "Teléfono", value: contact.telefono, icon: Phone },
+                  {
+                    label: "Correo",
+                    value: contact.email ?? "Sin correo registrado",
+                    icon: Mail,
+                  },
+                  { label: "Origen", value: contact.fuente ?? "Sin fuente", icon: Sparkles },
+                  {
+                    label: "Creación",
+                    value: formatDate(contact.created_at),
+                    icon: CalendarDays,
+                  },
+                  {
+                    label: "Actualización",
+                    value: formatDate(contact.updated_at),
+                    icon: Clock3,
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-start gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4"
+                  >
+                    <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-900 shadow-sm">
+                      <item.icon className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                        {item.label}
+                      </p>
+                      <p className="mt-1 text-base font-medium text-slate-950">
+                        {item.value}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-600 text-white">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
+                    Intereses
+                  </p>
+                  <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
+                    Propiedades que le interesan
+                  </h2>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4">
+                {interestedProperties.length > 0 ? (
+                  interestedProperties.map(({ property, createdAt }) => {
+                    const propertyRecord = property as typeof property & {
+                      tipo?: unknown;
+                      operacion?: unknown;
+                    };
+
+                    return (
+                      <div
+                        key={property.id.toString()}
+                        className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5"
+                      >
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-sky-700">
+                                {String(propertyRecord.tipo ?? "Tipo")}
+                              </span>
+                              <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-violet-700">
+                                {String(propertyRecord.operacion ?? "Operación")}
+                              </span>
+                            </div>
+                            <h3 className="text-lg font-semibold text-slate-950">
+                              {property.titulo}
+                            </h3>
+                            <p className="max-w-2xl text-sm leading-6 text-slate-600">
+                              {property.direccion}
+                            </p>
+                          </div>
+
+                          <div className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-right">
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                              Precio
+                            </p>
+                            <p className="mt-1 text-lg font-semibold text-slate-950">
+                              {formatMoney(property.precio)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                          <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                              Estatus
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-950">
+                              {property.inmueble_estatus.nombre}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                              Metros
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-950">
+                              {formatDimension(property.metros_cuadrados)}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                              Interés
+                            </p>
+                            <p className="mt-1 text-sm font-medium text-slate-950">
+                              {formatDate(createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-sm text-slate-600">
+                    Todavía no hay propiedades asociadas a este contacto.
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-600 text-white">
+                <MessageSquareText className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
+                  Interacciones
+                </p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
+                  Historial de conversación
+                </h2>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              {timeline.length > 0 ? (
+                timeline.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5"
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex items-start gap-4">
+                          <div
+                            className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${item.accentClass}`}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-950">
+                              {item.title}
+                            </p>
+                            <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">
+                              {item.body}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
+                          {formatDate(item.createdAt)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-sm text-slate-600">
+                  No hay interacciones registradas todavía.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      </AnimatedDashboardBackground>
+    </main>
+  );
+}
