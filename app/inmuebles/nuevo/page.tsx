@@ -1,13 +1,48 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState, type ChangeEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import Image from "next/image";
+import { useDropzone } from "react-dropzone";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  GripVertical,
+  ImagePlus,
+  Trash2,
+  Upload,
+} from "lucide-react";
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import {
-  DashboardMobileDock,
-  DashboardNavbar,
-} from "@/components/dashboard/dashboard-navbar";
+  LocationSection,
+  type LocationValue,
+} from "@/features/properties/components/location-section";
+
+// ── Data ──────────────────────────────────────────────────────────────────────
 
 const propertyTypes = [
   "Casa",
@@ -19,44 +54,6 @@ const propertyTypes = [
   "Bodega",
   "Consultorio",
   "Villa",
-];
-
-const operationTypes = ["Venta", "Renta", "Preventa", "Traspaso"];
-const currencies = ["MXN", "USD", "EUR"];
-
-const statesMx = [
-  "Aguascalientes",
-  "Baja California",
-  "Baja California Sur",
-  "Campeche",
-  "Chiapas",
-  "Chihuahua",
-  "Ciudad de México",
-  "Coahuila",
-  "Colima",
-  "Durango",
-  "Guanajuato",
-  "Guerrero",
-  "Hidalgo",
-  "Jalisco",
-  "México",
-  "Michoacán",
-  "Morelos",
-  "Nayarit",
-  "Nuevo León",
-  "Oaxaca",
-  "Puebla",
-  "Querétaro",
-  "Quintana Roo",
-  "San Luis Potosí",
-  "Sinaloa",
-  "Sonora",
-  "Tabasco",
-  "Tamaulipas",
-  "Tlaxcala",
-  "Veracruz",
-  "Yucatán",
-  "Zacatecas",
 ];
 
 const amenitiesCatalog = [
@@ -73,12 +70,7 @@ const amenitiesCatalog = [
   "Terraza",
 ];
 
-const requirementExamples = [
-  "Comprobar ingresos 3x renta",
-  "Fiador con inmueble",
-  "Póliza jurídica",
-  "Identificación oficial",
-];
+const requirementExamples = ["Fiador con inmueble", "Identificación oficial"];
 
 const restrictionExamples = [
   "No mascotas",
@@ -104,277 +96,560 @@ const advisors = [
   "Javier Ortega",
 ];
 
-const inputClass =
-  "w-full rounded-2xl border border-slate-200/90 bg-white/90 px-4 py-3 text-sm text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_8px_24px_rgba(15,23,42,0.04)] outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-100";
+const steps = [
+  { label: "Operación",      description: "¿Cuál es el tipo de operación del inmueble?" },
+  { label: "General",        description: "Nombre comercial, tipo de inmueble y precio." },
+  { label: "Ubicación",      description: "Dirección, colonia y posición exacta en el mapa." },
+  { label: "Características",description: "Distribución, superficies y condiciones del inmueble." },
+  { label: "Multimedia",     description: "Fotografías, galería y recursos de recorrido virtual." },
+  { label: "Amenidades",     description: "Servicios y amenidades disponibles en el desarrollo." },
+  { label: "Requisitos",     description: "Condiciones del expediente y restricciones al prospecto." },
+  { label: "Publicación",    description: "Metadatos SEO, visibilidad y fecha de publicación." },
+  { label: "Control",        description: "Asignación, estatus operativo y notas del equipo." },
+];
 
-const textareaClass = `${inputClass} min-h-[120px] resize-none`;
-const selectClass = `${inputClass} appearance-none`;
+const operationOptions = [
+  {
+    value: "Venta",
+    label: "Venta",
+    description: "Transferencia definitiva de la propiedad al comprador.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+        <path d="M3 10.5L12 3l9 7.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1v-9.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        <path d="M9 21v-8h6v8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    value: "Renta",
+    label: "Renta",
+    description: "Arrendamiento mensual con contrato e inquilino.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+        <circle cx="8.5" cy="13" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M13 13h7.5M17.5 13v2.5M20 13v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    value: "Preventa",
+    label: "Preventa",
+    description: "Propiedad en desarrollo o en planos.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+        <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M12 7.5v4.5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    value: "Traspaso",
+    label: "Traspaso",
+    description: "Cesión de derechos o contrato de arrendamiento.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+        <path d="M7 17V5m0 0L4 8m3-3l3 3M17 7v12m0 0l3-3m-3 3l-3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+];
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
+// ── Base styles ───────────────────────────────────────────────────────────────
+
+const inputBase =
+  "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-100";
+
+const textareaBase = `${inputBase} min-h-[96px] resize-none`;
+const selectBase   = `${inputBase} cursor-pointer appearance-none`;
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+const polizaTable: Array<{ max: number; price: number }> = [
+  { max: 10000, price: 3700 },
+  { max: 15000, price: 4300 },
+  { max: 20000, price: 4500 },
+  { max: 25000, price: 5200 },
+  { max: 30000, price: 5500 },
+  { max: 35000, price: 8100 },
+  { max: 40000, price: 9300 },
+  { max: 45000, price: 10000 },
+  { max: 50000, price: 12000 },
+];
+
+function calcPolizaPrice(rent: number): number {
+  const row = polizaTable.find((r) => rent <= r.max);
+  return row ? row.price : rent * 0.25;
 }
 
-function SectionCard({
-  index,
-  title,
-  subtitle,
-  accentClass,
-  children,
-}: {
-  index: string;
-  title: string;
-  subtitle: string;
-  accentClass: string;
-  children: ReactNode;
-}) {
+function formatCurrency(amount: number, curr: string) {
+  return new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: curr,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function parseNumericValue(value: string) {
+  const normalized = value.replace(/[^\d.]/g, "");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatCurrencyInput(value: string) {
+  const numericValue = parseNumericValue(value);
+  return new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+    maximumFractionDigits: 0,
+  }).format(numericValue);
+}
+
+// ── Layout helpers ────────────────────────────────────────────────────────────
+
+function Pad({ children }: { children: ReactNode }) {
   return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-white/80 bg-white/75 p-6 shadow-[0_28px_80px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-8">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.88)_0%,rgba(255,255,255,0.62)_100%)]" />
-      <div className="relative">
-        <div className="mb-6 flex items-start gap-4">
-          <div
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.25rem] text-sm font-semibold ${accentClass}`}
-          >
-            {index}
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-slate-950">
-              {title}
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-              {subtitle}
-            </p>
-          </div>
-        </div>
-        {children}
-      </div>
-    </section>
+    <div className="px-6 py-6 sm:px-10 lg:px-16">
+      <div className="space-y-4">{children}</div>
+    </div>
   );
 }
 
-function Field({
-  label,
-  hint,
-  children,
-  className,
-}: {
-  label: string;
-  hint?: string;
-  children: ReactNode;
-  className?: string;
-}) {
+function Row({ children, cols }: { children: ReactNode; cols?: string }) {
   return (
-    <div className={className}>
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <label className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-          {label}
-        </label>
-        {hint ? <span className="text-xs text-slate-400">{hint}</span> : null}
+    <div className={`grid gap-4 ${cols ?? "md:grid-cols-2"}`}>{children}</div>
+  );
+}
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <label className="text-xs font-medium text-slate-600">{label}</label>
+        {hint && <span className="text-xs text-slate-400">{hint}</span>}
       </div>
       {children}
     </div>
   );
 }
 
-function ToggleCard({
+function Sep() {
+  return <hr className="border-slate-100" />;
+}
+
+function NotebookMoneyField({
   label,
-  description,
-  checked,
+  value,
   onChange,
+  disabled,
 }: {
   label: string;
-  description: string;
-  checked: boolean;
-  onChange: (value: boolean) => void;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`flex w-full items-center justify-between gap-4 rounded-[1.5rem] border px-4 py-4 text-left transition ${
-        checked
-          ? "border-sky-300 bg-sky-50 text-slate-950 shadow-[0_16px_32px_rgba(14,165,233,0.12)]"
-          : "border-slate-200 bg-white/90 text-slate-700 hover:border-slate-300"
-      }`}
-    >
-      <div>
-        <p className="text-sm font-semibold">{label}</p>
-        <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
+    <Field label={label}>
+      <div className="rounded-[1.35rem] border border-border-soft bg-brand-surface/60 px-4 py-3 shadow-[0_12px_30px_rgba(20,16,35,0.04)]">
+        <div className="flex items-end gap-3">
+          <div className="min-w-0 flex-1">
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.35em] text-foreground/35">
+              Escribe el monto
+            </span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={formatCurrencyInput(value)}
+              onChange={(e) => onChange(e.target.value)}
+              disabled={disabled}
+              style={{ fontFamily: "var(--font-shadows-into-light), cursive" }}
+              className={`w-full border-0 bg-transparent p-0 text-3xl leading-none tracking-[0.02em] text-foreground outline-none placeholder:text-foreground/15 ${
+                disabled ? "cursor-not-allowed opacity-35" : ""
+              }`}
+            />
+          </div>
+          <div className="shrink-0 rounded-full border border-border-soft bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-foreground/70 shadow-sm">
+            MXN
+          </div>
+        </div>
       </div>
-      <span
-        className={`relative h-7 w-12 rounded-full transition ${
-          checked ? "bg-sky-500" : "bg-slate-200"
+    </Field>
+  );
+}
+
+type UploadedPhoto = {
+  id: string;
+  file: File;
+  previewUrl: string;
+  name: string;
+};
+
+function SortablePhotoTile({
+  photo,
+  index,
+  onRemove,
+  className,
+  imageClassName,
+  titleClassName,
+}: {
+  photo: UploadedPhoto;
+  index: number;
+  onRemove: (id: string) => void;
+  className?: string;
+  imageClassName?: string;
+  titleClassName?: string;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: photo.id });
+
+  return (
+    <article
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={`group relative overflow-hidden rounded-[1.35rem] border border-border-soft bg-white shadow-[0_12px_30px_rgba(20,16,35,0.06)] transition ${
+        isDragging ? "z-20 scale-[1.02] shadow-[0_20px_50px_rgba(20,16,35,0.12)]" : ""
+      } ${className ?? ""}`}
+    >
+      <div className={`relative overflow-hidden bg-surface-2 ${imageClassName ?? "aspect-[4/3]"}`}>
+        <Image
+          src={photo.previewUrl}
+          alt={photo.name}
+          fill
+          sizes="(max-width: 1280px) 50vw, 33vw"
+          unoptimized
+          className="object-cover"
+        />
+
+        <div className="absolute left-3 top-3 rounded-full border border-white/70 bg-white/85 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-foreground/70 shadow-sm">
+          {index === 0 ? "Portada" : `#${index + 1}`}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onRemove(photo.id)}
+          className="absolute right-3 top-3 inline-flex size-9 items-center justify-center rounded-full border border-white/70 bg-white/90 text-foreground/60 shadow-sm transition hover:text-error"
+          aria-label={`Eliminar ${photo.name}`}
+        >
+          <Trash2 className="size-4" />
+        </button>
+
+        <button
+          type="button"
+          aria-label={`Mover ${photo.name}`}
+          className="absolute bottom-3 right-3 inline-flex size-9 items-center justify-center rounded-full border border-white/70 bg-white/90 text-foreground/60 shadow-sm transition hover:text-foreground"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="size-4" />
+        </button>
+      </div>
+
+      <div className="space-y-1.5 px-3 py-3">
+        <p className={`truncate text-sm font-medium text-foreground ${titleClassName ?? ""}`}>
+          {photo.name}
+        </p>
+        <p className="text-[11px] uppercase tracking-[0.3em] text-foreground/35">
+          Arrastra para reordenar
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function PhotoGalleryField({
+  photos,
+  onChange,
+}: {
+  photos: UploadedPhoto[];
+  onChange: Dispatch<SetStateAction<UploadedPhoto[]>>;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      const nextPhotos = acceptedFiles.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        name: file.name,
+        previewUrl: URL.createObjectURL(file),
+      }));
+
+      onChange((current) => [...current, ...nextPhotos]);
+    },
+    [onChange],
+  );
+
+  const dropzone = useDropzone({
+    accept: { "image/*": [] },
+    multiple: true,
+    onDrop: handleDrop,
+  });
+
+  const { getRootProps, getInputProps, open, isDragActive } = dropzone;
+  const photoIds = photos.map((photo) => photo.id);
+  const latestPhotosRef = useRef(photos);
+
+  useEffect(() => {
+    latestPhotosRef.current = photos;
+  }, [photos]);
+
+  useEffect(
+    () => () => {
+      latestPhotosRef.current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+    },
+    [],
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (!over || active.id === over.id) {
+        return;
+      }
+
+      const oldIndex = photos.findIndex((photo) => photo.id === active.id);
+      const newIndex = photos.findIndex((photo) => photo.id === over.id);
+
+      if (oldIndex === -1 || newIndex === -1) {
+        return;
+      }
+
+      onChange((current) => arrayMove(current, oldIndex, newIndex));
+    },
+    [onChange, photos],
+  );
+
+  const removePhoto = useCallback(
+    (id: string) => {
+      onChange((current) =>
+        current.filter((photo) => {
+          if (photo.id === id) {
+            URL.revokeObjectURL(photo.previewUrl);
+            return false;
+          }
+
+          return true;
+        }),
+      );
+    },
+    [onChange],
+  );
+
+  const clearPhotos = useCallback(() => {
+    photos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+    onChange([]);
+  }, [onChange, photos]);
+
+  const coverPhoto = photos[0] ?? null;
+  const secondaryPhotos = photos.slice(1);
+  const photoCount = photos.length;
+
+  return (
+    <div className="space-y-4">
+      <div
+        {...getRootProps()}
+        className={`cursor-pointer rounded-[1.75rem] border-2 border-dashed bg-brand-surface/60 p-5 transition sm:p-6 ${
+          isDragActive
+            ? "border-brand-secondary bg-brand-secondary/8"
+            : "border-border-soft hover:border-brand-secondary/40 hover:bg-brand-surface"
         }`}
       >
-        <span
-          className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition ${
-            checked ? "left-6" : "left-1"
-          }`}
-        />
-      </span>
+        <input {...getInputProps()} />
+        <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2">
+            <div className="inline-flex size-11 items-center justify-center rounded-2xl border border-border-soft bg-white shadow-sm">
+              <Upload className="size-5 text-foreground/50" />
+            </div>
+            <div>
+              <p className="text-base font-semibold text-foreground">
+                Sube todas las imágenes de un jalón
+              </p>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-foreground/55">
+                Arrastra las fotos aquí o haz clic para seleccionarlas. Después podrás moverlas para acomodar el orden.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-full border border-border-soft bg-white px-4 py-2 text-sm font-medium text-foreground/65 shadow-sm">
+              {photoCount} {photoCount === 1 ? "imagen" : "imágenes"}
+            </div>
+            <button
+              type="button"
+              onClick={open}
+              className="inline-flex h-11 items-center gap-2 rounded-full bg-foreground px-4 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+            >
+              <ImagePlus className="size-4" />
+              Seleccionar imágenes
+            </button>
+            {photos.length > 0 ? (
+              <button
+                type="button"
+                onClick={clearPhotos}
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-border-soft bg-white px-4 text-sm font-medium text-foreground/70 transition hover:border-error hover:text-error"
+              >
+                <Trash2 className="size-4" />
+                Limpiar todo
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {photos.length > 0 ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={photoIds} strategy={rectSortingStrategy}>
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+              {coverPhoto ? (
+                <SortablePhotoTile
+                  photo={coverPhoto}
+                  index={0}
+                  onRemove={removePhoto}
+                  className="xl:row-span-2"
+                  imageClassName="aspect-[16/11] xl:aspect-[4/3]"
+                  titleClassName="text-base"
+                />
+              ) : null}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {secondaryPhotos.map((photo, index) => (
+                  <SortablePhotoTile
+                    key={photo.id}
+                    photo={photo}
+                    index={index + 1}
+                    onRemove={removePhoto}
+                  />
+                ))}
+              </div>
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <p className="rounded-[1.35rem] border border-dashed border-border-soft bg-white px-4 py-3 text-sm text-foreground/45">
+          PNG · JPG · WEBP
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Widgets ───────────────────────────────────────────────────────────────────
+
+function Stepper({
+  label, value, onChange, min = 0, max = 50, step = 1,
+}: {
+  label: string; value: number; onChange: (v: number) => void;
+  min?: number; max?: number; step?: number;
+}) {
+  const dec = () => onChange(Math.max(min, +((value - step).toFixed(1))));
+  const inc = () => onChange(Math.min(max, +((value + step).toFixed(1))));
+  return (
+    <div>
+      <div className="mb-1.5">
+        <span className="text-sm font-medium text-foreground/65">{label}</span>
+      </div>
+      <div className="flex h-12 items-center rounded-[1.15rem] border border-border-soft bg-brand-surface/70 shadow-[0_10px_24px_rgba(20,16,35,0.05)]">
+        <button type="button" onClick={dec} disabled={value <= min}
+          className="flex h-full w-11 items-center justify-center text-xl font-light text-foreground/30 transition hover:text-foreground/70 disabled:opacity-25">−</button>
+        <span className="flex-1 text-center text-lg font-semibold tabular-nums text-foreground">
+          {value % 1 === 0 ? value : value.toFixed(1)}
+        </span>
+        <button type="button" onClick={inc} disabled={value >= max}
+          className="flex h-full w-11 items-center justify-center text-xl font-light text-foreground/30 transition hover:text-foreground/70 disabled:opacity-25">+</button>
+      </div>
+    </div>
+  );
+}
+
+function Toggle({
+  label, description, checked, onChange,
+}: {
+  label: string; description: string; checked: boolean; onChange: (v: boolean) => void;
+}) {
+  return (
+    <button type="button" onClick={() => onChange(!checked)}
+      className={`flex w-full items-start justify-between gap-4 rounded-xl border p-4 text-left transition ${
+        checked ? "border-slate-800 bg-slate-900" : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70"
+      }`}>
+      <div>
+        <p className={`text-sm font-medium ${checked ? "text-white" : "text-slate-900"}`}>{label}</p>
+        <p className={`mt-0.5 text-xs leading-5 ${checked ? "text-slate-400" : "text-slate-500"}`}>{description}</p>
+      </div>
+      <div className={`relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition ${checked ? "bg-white/20" : "bg-slate-200"}`}>
+        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${checked ? "left-[18px]" : "left-0.5"}`} />
+      </div>
     </button>
   );
 }
 
-function ChipButton({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
+function Chip({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-        active
-          ? "border-slate-900 bg-slate-950 text-white shadow-[0_14px_28px_rgba(15,23,42,0.18)]"
-          : "border-slate-200 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950"
-      }`}
-    >
+    <button type="button" onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm transition ${
+        active ? "border-slate-800 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
+      }`}>
+      {active && (
+        <svg viewBox="0 0 12 10" fill="none" className="h-3 w-3 shrink-0">
+          <path d="M1 5l3.5 3.5L11 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )}
       {label}
     </button>
   );
 }
 
-function PlusIcon() {
+function TagBadge({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      className="h-4 w-4"
-    >
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+      {label}
+      <button type="button" onClick={onRemove} aria-label={`Eliminar ${label}`}
+        className="text-slate-400 transition hover:text-slate-700">
+        <svg viewBox="0 0 12 12" fill="none" className="h-3 w-3">
+          <path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+    </span>
   );
 }
 
-function XIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      fill="none"
-      className="h-4 w-4"
-    >
-      <path
-        d="M6 6l12 12M18 6L6 18"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function UploadDropzone({
-  title,
-  description,
-  multiple,
-  fileNames,
-  onChange,
-}: {
-  title: string;
-  description: string;
-  multiple?: boolean;
-  fileNames: string[];
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-}) {
-  return (
-    <label className="block cursor-pointer rounded-[1.75rem] border-2 border-dashed border-slate-200 bg-white/90 p-6 transition hover:border-sky-300 hover:bg-sky-50/30">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">{title}</p>
-          <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
-        </div>
-        <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-          <PlusIcon />
-        </div>
-      </div>
-
-      <div className="mt-4">
-        {fileNames.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {fileNames.map((name) => (
-              <span
-                key={name}
-                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700"
-              >
-                {name}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
-            PNG · JPG · WEBP
-          </p>
-        )}
-      </div>
-
-      <input
-        type="file"
-        className="sr-only"
-        accept="image/*"
-        multiple={multiple}
-        onChange={onChange}
-      />
-    </label>
-  );
-}
-
-function ListCollection({
-  items,
-  emptyLabel,
-  toneClass,
-  onRemove,
-}: {
-  items: string[];
-  emptyLabel: string;
-  toneClass: string;
-  onRemove: (index: number) => void;
+function ItemList({ items, emptyLabel, onRemove }: {
+  items: string[]; emptyLabel: string; onRemove: (i: number) => void;
 }) {
   if (items.length === 0) {
-    return (
-      <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50/70 px-4 py-4 text-sm text-slate-400">
-        {emptyLabel}
-      </div>
-    );
+    return <p className="rounded-xl border border-dashed border-slate-200 px-4 py-3 text-sm text-slate-400">{emptyLabel}</p>;
   }
-
   return (
-    <div className="space-y-3">
-      {items.map((item, index) => (
-        <div
-          key={`${item}-${index}`}
-          className="flex items-center justify-between gap-3 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3"
-        >
-          <div className="flex items-center gap-3">
-            <span className={`h-2 w-2 rounded-full ${toneClass}`} />
+    <div className="space-y-2">
+      {items.map((item, i) => (
+        <div key={`${item}-${i}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
             <span className="text-sm text-slate-700">{item}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => onRemove(index)}
-            className="text-slate-400 transition hover:text-rose-500"
-            aria-label={`Eliminar ${item}`}
-          >
-            <XIcon />
+          <button type="button" onClick={() => onRemove(i)} aria-label="Eliminar"
+            className="text-slate-300 transition hover:text-red-500">
+            <svg viewBox="0 0 12 12" fill="none" className="h-3 w-3">
+              <path d="M2 2l8 8M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
       ))}
@@ -382,906 +657,561 @@ function ListCollection({
   );
 }
 
+function AddRow({ value, onChange, onKeyDown, onAdd, placeholder }: {
+  value: string; onChange: (v: string) => void;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+  onAdd: () => void; placeholder: string;
+}) {
+  return (
+    <div className="flex gap-2">
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown} placeholder={placeholder} className={`${inputBase} flex-1`} />
+      <button type="button" onClick={onAdd} aria-label="Agregar"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white">
+        <svg viewBox="0 0 14 14" fill="none" className="h-3.5 w-3.5">
+          <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function NewPropertyPage() {
-  const [title, setTitle] = useState("");
-  const [mainPhotoNames, setMainPhotoNames] = useState<string[]>([]);
-  const [galleryNames, setGalleryNames] = useState<string[]>([]);
-  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([
-    "Seguridad 24/7",
-    "Elevador",
-  ]);
-  const [requirements, setRequirements] = useState<string[]>([]);
-  const [restrictions, setRestrictions] = useState<string[]>([]);
-  const [requirementDraft, setRequirementDraft] = useState("");
-  const [restrictionDraft, setRestrictionDraft] = useState("");
-  const [tags, setTags] = useState<string[]>([
-    "premium",
-    "polanco",
-    "listo-para-publicar",
-  ]);
-  const [tagDraft, setTagDraft] = useState("");
+  const [seoDesc, setSeoDesc]   = useState("");
+  const [price, setPrice]       = useState("");
+  const [operation, setOperation] = useState("");
+  const [maintenance, setMaintenance] = useState("");
+
+  const [locationValue, setLocationValue] = useState<LocationValue>({
+    address: "", colonia: "", municipio: "", estado: "", cp: "", lat: "", lng: "",
+  });
+
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+
+  const [rooms,    setRooms]    = useState(0);
+  const [baths,    setBaths]    = useState(0);
+  const [parkings, setParkings] = useState(0);
+  const [level,    setLevel]    = useState(0);
+
   const [maintenanceIncluded, setMaintenanceIncluded] = useState(false);
-  const [sharedCommission, setSharedCommission] = useState(true);
-  const [hasElevator, setHasElevator] = useState(true);
-  const [isFurnished, setIsFurnished] = useState(false);
-  const [petsAllowed, setPetsAllowed] = useState(false);
-  const [featured, setFeatured] = useState(true);
-  const [visible, setVisible] = useState(true);
+  const [hasElevator,  setHasElevator]  = useState(false);
+  const [isFurnished,  setIsFurnished]  = useState(false);
+  const [petsAllowed,  setPetsAllowed]  = useState(false);
+  const [featured,     setFeatured]     = useState(false);
+  const [visible,      setVisible]      = useState(true);
 
-  const slug = useMemo(() => slugify(title), [title]);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [requirements,      setRequirements]      = useState<string[]>([]);
+  const [restrictions,      setRestrictions]      = useState<string[]>([]);
+  const [tags,              setTags]              = useState<string[]>([]);
 
-  const toggleAmenity = (amenity: string) => {
-    setSelectedAmenities((current) =>
-      current.includes(amenity)
-        ? current.filter((item) => item !== amenity)
-        : [...current, amenity],
-    );
-  };
+  const [reqDraft,   setReqDraft]   = useState("");
+  const [restrDraft, setRestrDraft] = useState("");
+  const [tagDraft,   setTagDraft]   = useState("");
 
-  const addUniqueItem = (
+  // Wizard
+  const [step, setStep]               = useState(0);
+  const [transitioning, setTransitioning] = useState(false);
+
+
+  const requiredIncome = useMemo(() => {
+    const p = parseNumericValue(price);
+    return operation === "Renta" && p > 0 ? p * 3 : null;
+  }, [operation, price]);
+
+  const incomeChipLabel = requiredIncome !== null
+    ? `Comprobar ingresos ${formatCurrency(requiredIncome, "MXN")}`
+    : "Comprobar ingresos 3× renta";
+
+  const polizaPrice = useMemo(() => {
+    const p = parseNumericValue(price);
+    return operation === "Renta" && p > 0 ? calcPolizaPrice(p) : null;
+  }, [operation, price]);
+
+  const polizaChipLabel = polizaPrice !== null
+    ? `Póliza jurídica ${formatCurrency(polizaPrice, "MXN")}`
+    : "Póliza jurídica";
+
+  const normalizedRequirements = useMemo(
+    () =>
+      requirements.map((item) =>
+        item.startsWith("Póliza jurídica") && polizaChipLabel !== "Póliza jurídica"
+          ? polizaChipLabel
+          : item,
+      ),
+    [requirements, polizaChipLabel],
+  );
+
+  const toggleAmenity = (a: string) =>
+    setSelectedAmenities((cur) => cur.includes(a) ? cur.filter((x) => x !== a) : [...cur, a]);
+
+  const addUnique = (
     value: string,
     setter: React.Dispatch<React.SetStateAction<string[]>>,
     clear: () => void,
   ) => {
-    const normalized = value.trim();
-
-    if (!normalized) {
-      return;
-    }
-
-    setter((current) =>
-      current.includes(normalized) ? current : [...current, normalized],
-    );
+    const v = value.trim();
+    if (!v) return;
+    setter((cur) => (cur.includes(v) ? cur : [...cur, v]));
     clear();
   };
 
-  const removeAt = (
+  const removeAt = (setter: React.Dispatch<React.SetStateAction<string[]>>, index: number) =>
+    setter((cur) => cur.filter((_, i) => i !== index));
+
+  const onEnter = (
+    draft: string,
     setter: React.Dispatch<React.SetStateAction<string[]>>,
-    index: number,
-  ) => {
-    setter((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    clear: () => void,
+  ) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") { e.preventDefault(); addUnique(draft, setter, clear); }
   };
 
-  const setFileNames = (
-    event: ChangeEvent<HTMLInputElement>,
-    setter: React.Dispatch<React.SetStateAction<string[]>>,
-  ) => {
-    const files = Array.from(event.target.files ?? []).map((file) => file.name);
-    setter(files);
+  const goTo = (to: number) => {
+    if (to === step || transitioning) return;
+    setTransitioning(true);
+    setTimeout(() => { setStep(to); setTransitioning(false); }, 150);
   };
+
+  const next = () => goTo(Math.min(step + 1, steps.length - 1));
+  const prev = () => goTo(Math.max(step - 1, 0));
 
   return (
-    <main className="relative isolate min-h-[100dvh] overflow-x-hidden bg-slate-50 px-4 py-6 pb-28 text-slate-950 sm:px-6 lg:px-10 lg:pb-10">
+    <main className="relative isolate min-h-[100dvh] overflow-x-hidden px-4 py-6 pb-28 text-foreground sm:px-6 lg:px-10 lg:pb-10">
       <AnimatedDashboardBackground>
-        <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-6 lg:flex-row lg:items-start">
-          <div className="hidden lg:block lg:shrink-0">
-            <DashboardNavbar />
-          </div>
-
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
           <div className="min-w-0 flex-1">
-            <form
-              onSubmit={(event) => event.preventDefault()}
-              className="space-y-6"
-            >
-              <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950 px-6 py-8 text-white shadow-2xl sm:px-8 sm:py-10">
-                <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl" />
-                <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-amber-400/20 blur-3xl" />
+            <form onSubmit={(e) => e.preventDefault()} className="new-property-form space-y-6">
 
-                <div className="relative z-10 flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
-                  <div className="max-w-4xl">
-                    <nav className="mb-5 flex items-center gap-2 text-xs text-zinc-500">
-                      <Link href="/" className="transition hover:text-zinc-300">
-                        Dashboard
-                      </Link>
-                      <span>/</span>
-                      <Link
-                        href="/inmuebles"
-                        className="transition hover:text-zinc-300"
-                      >
-                        Inmuebles
-                      </Link>
-                      <span>/</span>
-                      <span className="text-zinc-300">Nuevo</span>
-                    </nav>
-
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-zinc-400">
-                      Captura inicial
-                    </p>
-                    <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">
-                      Nuevo inmueble
-                    </h1>
-                    <p className="mt-4 max-w-3xl text-sm leading-7 text-zinc-300 sm:text-base">
-                      Primera versión visual del formulario para registrar
-                      propiedades. La experiencia ya está lista para captura y
-                      revisión interna; la conexión con Prisma puede agregarse
-                      después sin rehacer la UI.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-3 xl:w-[460px]">
-                    <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
-                      <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-400">
-                        Secciones
-                      </p>
-                      <p className="mt-2 text-3xl font-semibold">09</p>
-                    </div>
-                    <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
-                      <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-400">
-                        Amenidades
-                      </p>
-                      <p className="mt-2 text-3xl font-semibold">
-                        {selectedAmenities.length}
-                      </p>
-                    </div>
-                    <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.06] p-4">
-                      <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-400">
-                        Tags
-                      </p>
-                      <p className="mt-2 text-3xl font-semibold">{tags.length}</p>
-                    </div>
+              <div className="relative hidden py-4 sm:block">
+                <div
+                  className="step-progress-track h-3.5 w-full shadow-[0_10px_30px_rgba(124,58,237,0.12)]"
+                  aria-hidden="true"
+                >
+                  <div
+                    className="step-progress-track-fill h-full transition-all duration-300 ease-out"
+                    style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+                  >
+                    <span className="step-progress-track-cap" />
                   </div>
                 </div>
-              </section>
+              </div>
 
-              <div className="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
-                <div className="space-y-6">
-                  <SectionCard
-                    index="01"
-                    title="Información principal"
-                    subtitle="Nombre comercial, slug visual y clasificación base del inmueble."
-                    accentClass="bg-sky-100 text-sky-700"
-                  >
-                    <div className="grid gap-5">
-                      <Field label="Título">
-                        <input
-                          type="text"
-                          value={title}
-                          onChange={(event) => setTitle(event.target.value)}
-                          placeholder="Ej. Penthouse con terraza privada en Polanco"
-                          className={inputClass}
-                        />
-                      </Field>
+              {/* ── Step indicator (mobile) ───────────────────────────────── */}
+              <div className="sm:hidden">
+                <div className="mb-2 flex items-center justify-between text-xs text-foreground/55">
+                  <span className="font-medium text-foreground/80">{steps[step].label}</span>
+                  <span>{step + 1} / {steps.length}</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-border-soft">
+                  <div
+                    className="h-full rounded-full bg-foreground transition-all duration-300"
+                    style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+                  />
+                </div>
+              </div>
 
-                      <Field label="Slug automático" hint="Solo lectura visual">
-                        <div className="relative">
-                          <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-xs text-slate-400">
-                            /inmuebles/
-                          </span>
+              {/* ── Animated step content ─────────────────────────────────── */}
+              <div className={`transition-opacity duration-[150ms] ${transitioning ? "opacity-0" : "opacity-100"}`}>
+
+                {/* Step label */}
+                <div className="mx-auto mb-5 w-full max-w-2xl text-center">
+                  <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                    Nuevo inmueble
+                  </h2>
+                  <p className="mt-2 text-sm text-foreground/55">
+                    Completa la información para registrar el inmueble en el inventario.
+                  </p>
+                </div>
+
+                <div className="overflow-hidden rounded-[2rem] border border-border-soft bg-white shadow-[0_24px_70px_rgba(20,16,35,0.08)]">
+
+                  {/* 0 · Operación */}
+                  {step === 0 && (
+                    <div className="px-5 py-6 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+                      <div className="mx-auto mb-8 max-w-2xl text-center">
+                        <p className="text-xs font-bold uppercase tracking-[0.35em] text-foreground/45">
+                          Operación
+                        </p>
+                        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+                          ¿Cuál es el tipo de operación del inmueble?
+                        </h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        {operationOptions.map((op) => (
+                          <button
+                            key={op.value}
+                            type="button"
+                            onClick={() => {
+                              setOperation(op.value);
+                              goTo(1);
+                            }}
+                            className={`group flex flex-col items-start gap-5 rounded-2xl border p-6 text-left transition-all duration-150 sm:p-8 ${
+                              operation === op.value
+                                ? "border-foreground bg-foreground text-white shadow-lg shadow-slate-200"
+                                : "border-border-soft bg-white hover:border-brand-secondary"
+                            }`}
+                          >
+                            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-colors ${
+                              operation === op.value ? "bg-white/10 text-white" : "bg-surface-1 text-foreground/70 group-hover:bg-brand-secondary group-hover:text-white"
+                            }`}>
+                              {op.icon}
+                            </div>
+                            <div>
+                              <p className={`text-base font-semibold ${operation === op.value ? "text-white" : "text-foreground"}`}>
+                                {op.label}
+                              </p>
+                              <p className={`mt-1 text-sm leading-snug ${operation === op.value ? "text-white/70" : "text-foreground/60"}`}>
+                                {op.description}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 1 · General */}
+                  {step === 1 && (
+                    <div className="px-5 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+                      <div className="mx-auto mb-6 max-w-2xl text-center">
+                        <p className="text-xs font-bold uppercase tracking-[0.35em] text-foreground/45">
+                          General
+                        </p>
+                        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+                          Define la ficha básica del inmueble
+                        </h3>
+                      </div>
+
+                      <div className="mx-auto grid max-w-5xl gap-4">
+                        <Field label="Título del inmueble">
                           <input
                             type="text"
-                            readOnly
-                            value={slug}
-                            placeholder="se-genera-desde-el-titulo"
-                            className={`${inputClass} cursor-default bg-slate-50 pl-[6.25rem] font-mono text-xs text-slate-500`}
+                            placeholder="Título comercial del inmueble"
+                            className={`${inputBase} h-11`}
                           />
-                        </div>
-                      </Field>
+                        </Field>
 
-                      <Field label="Descripción">
-                        <textarea
-                          placeholder="Describe la experiencia, atributos diferenciales, distribución, acabados, entorno y beneficios del inmueble."
-                          className={textareaClass}
-                        />
-                      </Field>
-
-                      <div className="grid gap-5 md:grid-cols-2">
                         <Field label="Tipo de inmueble">
-                          <select className={selectClass} defaultValue="">
-                            <option value="" disabled>
-                              Seleccionar tipo
-                            </option>
-                            {propertyTypes.map((item) => (
-                              <option key={item}>{item}</option>
-                            ))}
+                          <select className={`${selectBase} h-11`} defaultValue="">
+                            <option value="" disabled>Selecciona tipo</option>
+                            {propertyTypes.map((t) => <option key={t}>{t}</option>)}
                           </select>
                         </Field>
 
-                        <Field label="Operación">
-                          <select className={selectClass} defaultValue="">
-                            <option value="" disabled>
-                              Seleccionar operación
-                            </option>
-                            {operationTypes.map((item) => (
-                              <option key={item}>{item}</option>
-                            ))}
-                          </select>
-                        </Field>
+                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+                          <NotebookMoneyField
+                            label="Precio"
+                            value={price}
+                            onChange={setPrice}
+                          />
+
+                          <Field label="Mantenimiento">
+                            <div className="rounded-[1.35rem] border border-border-soft bg-brand-surface/60 px-4 py-3 shadow-[0_12px_30px_rgba(20,16,35,0.04)]">
+                              <div className="flex items-end gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.35em] text-foreground/35">
+                                    Escribe el monto
+                                  </span>
+                                  <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    placeholder={maintenanceIncluded ? "$0" : "Sin mantenimiento"}
+                                    value={maintenanceIncluded ? formatCurrencyInput(maintenance) : ""}
+                                    onChange={(e) => setMaintenance(e.target.value)}
+                                    disabled={!maintenanceIncluded}
+                                    style={{ fontFamily: "var(--font-shadows-into-light), cursive" }}
+                                    className={`w-full border-0 bg-transparent p-0 text-3xl leading-none tracking-[0.02em] text-foreground outline-none placeholder:text-foreground/15 ${
+                                      maintenanceIncluded ? "" : "cursor-not-allowed opacity-35"
+                                    }`}
+                                  />
+                                </div>
+                                <button
+                                  type="button" role="switch" aria-checked={maintenanceIncluded}
+                                  onClick={() => setMaintenanceIncluded(!maintenanceIncluded)}
+                                  className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                                    maintenanceIncluded ? "bg-foreground" : "bg-slate-200 hover:bg-slate-300"
+                                  }`}
+                                >
+                                  <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-all ${
+                                    maintenanceIncluded ? "left-[17px]" : "left-0.5"
+                                  }`} />
+                                </button>
+                              </div>
+                            </div>
+                          </Field>
+                        </div>
                       </div>
                     </div>
-                  </SectionCard>
+                  )}
 
-                  <SectionCard
-                    index="02"
-                    title="Precio"
-                    subtitle="Valor comercial, moneda y reglas económicas del listing."
-                    accentClass="bg-emerald-100 text-emerald-700"
-                  >
-                    <div className="grid gap-5">
-                      <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px]">
-                        <Field label="Precio">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            placeholder="0.00"
-                            className={inputClass}
-                          />
-                        </Field>
+                  {/* 2 · Ubicación */}
+                  {step === 2 && (
+                    <LocationSection value={locationValue} onChange={setLocationValue} />
+                  )}
 
-                        <Field label="Moneda">
-                          <select className={selectClass} defaultValue="MXN">
-                            {currencies.map((item) => (
-                              <option key={item}>{item}</option>
-                            ))}
-                          </select>
-                        </Field>
+                  {/* 3 · Características */}
+                  {step === 3 && (
+                    <Pad>
+                      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        <Stepper label="Habitaciones"     value={rooms}    onChange={setRooms}    max={20} />
+                        <Stepper label="Baños"            value={baths}    onChange={setBaths}    max={20} step={0.5} />
+                        <Stepper label="Estacionamientos" value={parkings} onChange={setParkings} max={20} />
+                        <Stepper label="Nivel / Piso"     value={level}    onChange={setLevel}    max={100} />
                       </div>
 
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <ToggleCard
-                          label="Mantenimiento incluido"
-                          description="Marca si la cuota ya está integrada en el precio publicado."
-                          checked={maintenanceIncluded}
-                          onChange={setMaintenanceIncluded}
-                        />
-                        <ToggleCard
-                          label="Comisión compartida"
-                          description="Activa si el cierre contempla co-broker o reparto con otro asesor."
-                          checked={sharedCommission}
-                          onChange={setSharedCommission}
-                        />
-                      </div>
+                      <Sep />
 
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <Field label="Monto mantenimiento">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            placeholder="0.00"
-                            disabled={!maintenanceIncluded}
-                            className={`${inputClass} disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
-                          />
+                      <Row cols="sm:grid-cols-2 xl:grid-cols-4">
+                        <Field label="m² totales">
+                          <input type="number" min="0" step="0.01" placeholder="185" className={inputBase} />
                         </Field>
-
-                        <Field label="Porcentaje comisión">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.5"
-                            placeholder="0"
-                            disabled={!sharedCommission}
-                            className={`${inputClass} disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
-                          />
+                        <Field label="Sup. construida (m²)">
+                          <input type="number" min="0" step="0.01" placeholder="165" className={inputBase} />
                         </Field>
-                      </div>
-                    </div>
-                  </SectionCard>
-
-                  <SectionCard
-                    index="03"
-                    title="Ubicación"
-                    subtitle="Dirección operativa, referencia geográfica y punto exacto para mapa."
-                    accentClass="bg-violet-100 text-violet-700"
-                  >
-                    <div className="grid gap-5">
-                      <Field label="Dirección">
-                        <input
-                          type="text"
-                          placeholder="Calle, número exterior, interior y referencias"
-                          className={inputClass}
-                        />
-                      </Field>
-
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <Field label="Colonia">
-                          <input
-                            type="text"
-                            placeholder="Ej. Polanco IV Sección"
-                            className={inputClass}
-                          />
-                        </Field>
-                        <Field label="Municipio">
-                          <input
-                            type="text"
-                            placeholder="Ej. Miguel Hidalgo"
-                            className={inputClass}
-                          />
-                        </Field>
-                      </div>
-
-                      <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_180px]">
-                        <Field label="Estado">
-                          <select className={selectClass} defaultValue="">
-                            <option value="" disabled>
-                              Seleccionar estado
-                            </option>
-                            {statesMx.map((item) => (
-                              <option key={item}>{item}</option>
-                            ))}
-                          </select>
-                        </Field>
-                        <Field label="Código postal">
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            placeholder="11560"
-                            className={inputClass}
-                          />
-                        </Field>
-                      </div>
-
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <Field label="Latitud">
-                          <input
-                            type="number"
-                            step="0.000001"
-                            placeholder="19.432608"
-                            className={inputClass}
-                          />
-                        </Field>
-                        <Field label="Longitud">
-                          <input
-                            type="number"
-                            step="0.000001"
-                            placeholder="-99.133209"
-                            className={inputClass}
-                          />
-                        </Field>
-                      </div>
-
-                      <Field label="Google Maps URL">
-                        <input
-                          type="url"
-                          placeholder="https://maps.google.com/?q=..."
-                          className={inputClass}
-                        />
-                      </Field>
-                    </div>
-                  </SectionCard>
-
-                  <SectionCard
-                    index="04"
-                    title="Características"
-                    subtitle="Distribución, superficies y banderas operativas del inmueble."
-                    accentClass="bg-amber-100 text-amber-700"
-                  >
-                    <div className="grid gap-5">
-                      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                        <Field label="Habitaciones">
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="3"
-                            className={inputClass}
-                          />
-                        </Field>
-                        <Field label="Baños">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.5"
-                            placeholder="2.5"
-                            className={inputClass}
-                          />
-                        </Field>
-                        <Field label="Estacionamientos">
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="2"
-                            className={inputClass}
-                          />
-                        </Field>
-                        <Field label="Metros cuadrados">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            placeholder="185"
-                            className={inputClass}
-                          />
-                        </Field>
-                      </div>
-
-                      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                        <Field label="Superficie construida">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            placeholder="165"
-                            className={inputClass}
-                          />
-                        </Field>
-                        <Field label="Superficie terreno">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            placeholder="220"
-                            className={inputClass}
-                          />
+                        <Field label="Sup. terreno (m²)">
+                          <input type="number" min="0" step="0.01" placeholder="220" className={inputBase} />
                         </Field>
                         <Field label="Año de construcción">
-                          <input
-                            type="number"
-                            min="1900"
-                            max="2100"
-                            placeholder="2021"
-                            className={inputClass}
-                          />
+                          <input type="number" min="1900" max="2100" placeholder="2021" className={inputBase} />
                         </Field>
-                        <Field label="Nivel">
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="12"
-                            className={inputClass}
-                          />
-                        </Field>
-                      </div>
+                      </Row>
 
-                      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        <ToggleCard
-                          label="Elevador"
-                          description="El inmueble o desarrollo cuenta con elevador."
-                          checked={hasElevator}
-                          onChange={setHasElevator}
-                        />
-                        <ToggleCard
-                          label="Amueblado"
-                          description="Se entrega o renta con mobiliario incluido."
-                          checked={isFurnished}
-                          onChange={setIsFurnished}
-                        />
-                        <ToggleCard
-                          label="Mascotas permitidas"
-                          description="Acepta mascotas bajo lineamientos del propietario."
-                          checked={petsAllowed}
-                          onChange={setPetsAllowed}
-                        />
-                        <div className="rounded-[1.5rem] border border-slate-200 bg-white/90 p-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-                            Snapshot
-                          </p>
-                          <p className="mt-3 text-sm leading-6 text-slate-600">
-                            Ideal para capturar atributos que después alimenten
-                            filtros, cards y SEO.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </SectionCard>
+                      <Sep />
 
-                  <SectionCard
-                    index="05"
-                    title="Multimedia"
-                    subtitle="Recursos visuales listos para portal, marketing y revisión interna."
-                    accentClass="bg-rose-100 text-rose-700"
-                  >
-                    <div className="grid gap-5">
-                      <UploadDropzone
-                        title="Fotografía principal"
-                        description="Sube la imagen hero de la propiedad. Se muestra como ejemplo visual, sin persistencia."
-                        fileNames={mainPhotoNames}
-                        onChange={(event) => setFileNames(event, setMainPhotoNames)}
-                      />
+                      <Row cols="md:grid-cols-3">
+                        <Toggle label="Elevador"  description="El desarrollo cuenta con elevador."                  checked={hasElevator} onChange={setHasElevator} />
+                        <Toggle label="Amueblado" description="Se entrega con mobiliario incluido."                 checked={isFurnished} onChange={setIsFurnished} />
+                        <Toggle label="Mascotas"  description="Acepta mascotas bajo lineamientos del propietario." checked={petsAllowed} onChange={setPetsAllowed} />
+                      </Row>
+                    </Pad>
+                  )}
 
-                      <UploadDropzone
-                        title="Galería"
-                        description="Puedes seleccionar varias imágenes para simular el flujo de carga del inventario."
-                        multiple
-                        fileNames={galleryNames}
-                        onChange={(event) => setFileNames(event, setGalleryNames)}
-                      />
-
-                      <div className="grid gap-5 md:grid-cols-2">
+                  {/* 4 · Multimedia */}
+                  {step === 4 && (
+                    <Pad>
+                      <PhotoGalleryField photos={photos} onChange={setPhotos} />
+                      <Sep />
+                      <Row>
                         <Field label="Video URL">
-                          <input
-                            type="url"
-                            placeholder="https://youtube.com/..."
-                            className={inputClass}
-                          />
+                          <input type="url" placeholder="https://youtube.com/..." className={inputBase} />
                         </Field>
                         <Field label="Tour virtual URL">
-                          <input
-                            type="url"
-                            placeholder="https://matterport.com/..."
-                            className={inputClass}
-                          />
+                          <input type="url" placeholder="https://matterport.com/..." className={inputBase} />
                         </Field>
+                      </Row>
+                    </Pad>
+                  )}
+
+                  {/* 5 · Amenidades */}
+                  {step === 5 && (
+                    <div className="px-6 py-6 sm:px-10 lg:px-16">
+                      <div className="flex flex-wrap gap-2">
+                        {amenitiesCatalog.map((a) => (
+                          <Chip key={a} label={a} active={selectedAmenities.includes(a)} onClick={() => toggleAmenity(a)} />
+                        ))}
                       </div>
+                      {selectedAmenities.length > 0 && (
+                        <p className="mt-3 text-xs text-slate-400">
+                          {selectedAmenities.length} amenidad{selectedAmenities.length !== 1 ? "es" : ""} seleccionada{selectedAmenities.length !== 1 ? "s" : ""}
+                        </p>
+                      )}
                     </div>
-                  </SectionCard>
+                  )}
 
-                  <SectionCard
-                    index="06"
-                    title="Amenidades"
-                    subtitle="Selecciona con chips las amenidades que harán más valioso el listing."
-                    accentClass="bg-teal-100 text-teal-700"
-                  >
-                    <div className="flex flex-wrap gap-3">
-                      {amenitiesCatalog.map((item) => (
-                        <ChipButton
-                          key={item}
-                          label={item}
-                          active={selectedAmenities.includes(item)}
-                          onClick={() => toggleAmenity(item)}
-                        />
-                      ))}
-                    </div>
-                  </SectionCard>
-
-                  <SectionCard
-                    index="07"
-                    title="Requisitos y Restricciones"
-                    subtitle='Representación visual del JSONB `{"requisitos":[],"restricciones":[]}`.'
-                    accentClass="bg-orange-100 text-orange-700"
-                  >
-                    <div className="grid gap-6 xl:grid-cols-2">
-                      <div className="space-y-4">
+                  {/* 6 · Requisitos */}
+                  {step === 6 && (
+                    <div className="divide-y divide-slate-100">
+                      <div className="space-y-4 px-6 py-6 sm:px-10 lg:px-16">
                         <div>
-                          <h3 className="text-base font-semibold text-slate-900">
-                            Requisitos
-                          </h3>
-                          <p className="mt-1 text-sm text-slate-500">
-                            Agrega condiciones para el expediente o aprobación.
-                          </p>
+                          <p className="text-sm font-medium text-slate-900">Requisitos</p>
+                          <p className="mt-0.5 text-xs text-slate-500">Condiciones para aprobación del expediente.</p>
                         </div>
+
+                        {requiredIncome !== null && (
+                          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5">
+                            <div className="mb-2.5 flex items-center gap-2">
+                              <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5 shrink-0 text-slate-500">
+                                <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.25" />
+                                <path d="M8 7v4M8 5h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                              </svg>
+                              <p className="text-xs font-semibold text-slate-700">Cálculos automáticos para renta</p>
+                            </div>
+                            <div className="space-y-2 pl-5">
+                              <div className="flex items-baseline justify-between gap-4">
+                                <p className="text-xs text-slate-500">Ingresos mínimos (3×)</p>
+                                <p className="text-xs font-semibold text-slate-900">{formatCurrency(requiredIncome, "MXN")}</p>
+                              </div>
+                              {polizaPrice !== null && (
+                                <div className="flex items-baseline justify-between gap-4">
+                                  <p className="text-xs text-slate-500">
+                                    Póliza jurídica sin IVA
+                                    <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-100 px-1.5 py-px text-[10px] font-medium text-emerald-700">auto</span>
+                                  </p>
+                                  <p className="text-xs font-semibold text-slate-900">{formatCurrency(polizaPrice, "MXN")}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
 
                         <div className="flex flex-wrap gap-2">
-                          {requirementExamples.map((item) => (
-                            <ChipButton
-                              key={item}
-                              label={item}
-                              active={requirements.includes(item)}
-                              onClick={() =>
-                                addUniqueItem(
-                                  item,
-                                  setRequirements,
-                                  () => undefined,
-                                )
-                              }
-                            />
+                          <Chip
+                            label={incomeChipLabel}
+                            active={normalizedRequirements.some((r) => r.startsWith("Comprobar ingresos"))}
+                            onClick={() => setRequirements((cur) => [...cur.filter((r) => !r.startsWith("Comprobar ingresos")), incomeChipLabel])}
+                          />
+                          <Chip
+                            label={polizaChipLabel}
+                            active={normalizedRequirements.some((r) => r.startsWith("Póliza jurídica"))}
+                            onClick={() => setRequirements((cur) => [...cur.filter((r) => !r.startsWith("Póliza jurídica")), polizaChipLabel])}
+                          />
+                          {requirementExamples.map((ex) => (
+                            <Chip key={ex} label={ex} active={normalizedRequirements.includes(ex)} onClick={() => addUnique(ex, setRequirements, () => {})} />
                           ))}
                         </div>
-
-                        <div className="flex gap-3">
-                          <input
-                            type="text"
-                            value={requirementDraft}
-                            onChange={(event) =>
-                              setRequirementDraft(event.target.value)
-                            }
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter") {
-                                event.preventDefault();
-                                addUniqueItem(
-                                  requirementDraft,
-                                  setRequirements,
-                                  () => setRequirementDraft(""),
-                                );
-                              }
-                            }}
-                            placeholder="Agregar requisito"
-                            className={`${inputClass} flex-1`}
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              addUniqueItem(
-                                requirementDraft,
-                                setRequirements,
-                                () => setRequirementDraft(""),
-                              )
-                            }
-                            className="inline-flex h-12 items-center gap-2 rounded-2xl bg-sky-500 px-4 text-sm font-semibold text-white shadow-[0_18px_32px_rgba(14,165,233,0.24)] transition hover:bg-sky-600"
-                          >
-                            <PlusIcon />
-                            Agregar requisito
-                          </button>
-                        </div>
-
-                        <ListCollection
-                          items={requirements}
-                          emptyLabel="Sin requisitos agregados."
-                          toneClass="bg-sky-400"
-                          onRemove={(index) => removeAt(setRequirements, index)}
+                        <AddRow
+                          value={reqDraft} onChange={setReqDraft}
+                          onKeyDown={onEnter(reqDraft, setRequirements, () => setReqDraft(""))}
+                          onAdd={() => addUnique(reqDraft, setRequirements, () => setReqDraft(""))}
+                          placeholder="Agregar requisito personalizado"
                         />
+                        <ItemList items={normalizedRequirements} emptyLabel="Sin requisitos agregados." onRemove={(i) => removeAt(setRequirements, i)} />
                       </div>
 
-                      <div className="space-y-4">
+                      <div className="space-y-4 px-6 py-6 sm:px-10 lg:px-16">
                         <div>
-                          <h3 className="text-base font-semibold text-slate-900">
-                            Restricciones
-                          </h3>
-                          <p className="mt-1 text-sm text-slate-500">
-                            Define límites claros para la operación o el perfil
-                            del prospecto.
-                          </p>
+                          <p className="text-sm font-medium text-slate-900">Restricciones</p>
+                          <p className="mt-0.5 text-xs text-slate-500">Límites para el uso o el perfil del prospecto.</p>
                         </div>
-
                         <div className="flex flex-wrap gap-2">
-                          {restrictionExamples.map((item) => (
-                            <ChipButton
-                              key={item}
-                              label={item}
-                              active={restrictions.includes(item)}
-                              onClick={() =>
-                                addUniqueItem(
-                                  item,
-                                  setRestrictions,
-                                  () => undefined,
-                                )
-                              }
-                            />
+                          {restrictionExamples.map((ex) => (
+                            <Chip key={ex} label={ex} active={restrictions.includes(ex)} onClick={() => addUnique(ex, setRestrictions, () => {})} />
                           ))}
                         </div>
-
-                        <div className="flex gap-3">
-                          <input
-                            type="text"
-                            value={restrictionDraft}
-                            onChange={(event) =>
-                              setRestrictionDraft(event.target.value)
-                            }
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter") {
-                                event.preventDefault();
-                                addUniqueItem(
-                                  restrictionDraft,
-                                  setRestrictions,
-                                  () => setRestrictionDraft(""),
-                                );
-                              }
-                            }}
-                            placeholder="Agregar restricción"
-                            className={`${inputClass} flex-1`}
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              addUniqueItem(
-                                restrictionDraft,
-                                setRestrictions,
-                                () => setRestrictionDraft(""),
-                              )
-                            }
-                            className="inline-flex h-12 items-center gap-2 rounded-2xl bg-orange-500 px-4 text-sm font-semibold text-white shadow-[0_18px_32px_rgba(249,115,22,0.24)] transition hover:bg-orange-600"
-                          >
-                            <PlusIcon />
-                            Agregar restricción
-                          </button>
-                        </div>
-
-                        <ListCollection
-                          items={restrictions}
-                          emptyLabel="Sin restricciones agregadas."
-                          toneClass="bg-orange-400"
-                          onRemove={(index) => removeAt(setRestrictions, index)}
+                        <AddRow
+                          value={restrDraft} onChange={setRestrDraft}
+                          onKeyDown={onEnter(restrDraft, setRestrictions, () => setRestrDraft(""))}
+                          onAdd={() => addUnique(restrDraft, setRestrictions, () => setRestrDraft(""))}
+                          placeholder="Agregar restricción personalizada"
                         />
+                        <ItemList items={restrictions} emptyLabel="Sin restricciones agregadas." onRemove={(i) => removeAt(setRestrictions, i)} />
                       </div>
                     </div>
-                  </SectionCard>
+                  )}
 
-                  <SectionCard
-                    index="08"
-                    title="SEO y publicación"
-                    subtitle="Configuración editorial y de visibilidad para salida pública."
-                    accentClass="bg-indigo-100 text-indigo-700"
-                  >
-                    <div className="grid gap-5">
+                  {/* 7 · Publicación */}
+                  {step === 7 && (
+                    <Pad>
                       <Field label="SEO title">
-                        <input
-                          type="text"
-                          placeholder="Título optimizado para buscadores"
-                          className={inputClass}
-                        />
+                        <input type="text" placeholder="Título optimizado para buscadores" className={inputBase} />
                       </Field>
-
-                      <Field label="SEO description" hint="Máximo sugerido 160 caracteres">
+                      <Field label="SEO description" hint={`${seoDesc.length}/160`}>
                         <textarea
-                          placeholder="Resumen breve y persuasivo para snippets y tarjetas sociales."
-                          className={`${textareaClass} min-h-[110px]`}
+                          value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)}
+                          maxLength={200} placeholder="Resumen breve y persuasivo para snippets y redes sociales."
+                          className={`${textareaBase} min-h-[84px]`}
                         />
                       </Field>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <ToggleCard
-                          label="Destacado"
-                          description="Resalta la propiedad en colecciones premium o carruseles."
-                          checked={featured}
-                          onChange={setFeatured}
-                        />
-                        <ToggleCard
-                          label="Visible"
-                          description="Indica si la propiedad está lista para mostrarse en el portal."
-                          checked={visible}
-                          onChange={setVisible}
-                        />
-                      </div>
-
+                      <Sep />
+                      <Row>
+                        <Toggle label="Destacado"       description="Aparece en colecciones premium y carruseles."  checked={featured} onChange={setFeatured} />
+                        <Toggle label="Visible en portal" description="El inmueble es público para los visitantes." checked={visible}  onChange={setVisible} />
+                      </Row>
+                      <Sep />
                       <Field label="Tags">
-                        <div className="flex gap-3">
-                          <input
-                            type="text"
-                            value={tagDraft}
-                            onChange={(event) => setTagDraft(event.target.value)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter") {
-                                event.preventDefault();
-                                addUniqueItem(tagDraft, setTags, () => setTagDraft(""));
-                              }
-                            }}
-                            placeholder="Agregar tag"
-                            className={`${inputClass} flex-1`}
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              addUniqueItem(tagDraft, setTags, () => setTagDraft(""))
-                            }
-                            className="inline-flex h-12 items-center gap-2 rounded-2xl bg-indigo-500 px-4 text-sm font-semibold text-white shadow-[0_18px_32px_rgba(99,102,241,0.24)] transition hover:bg-indigo-600"
-                          >
-                            <PlusIcon />
-                            Agregar
-                          </button>
-                        </div>
-
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {tags.map((item, index) => (
-                            <span
-                              key={`${item}-${index}`}
-                              className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700"
-                            >
-                              {item}
-                              <button
-                                type="button"
-                                onClick={() => removeAt(setTags, index)}
-                                className="text-indigo-400 transition hover:text-indigo-700"
-                                aria-label={`Eliminar tag ${item}`}
-                              >
-                                <XIcon />
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      </Field>
-
-                      <Field label="Published at">
-                        <input type="datetime-local" className={inputClass} />
-                      </Field>
-                    </div>
-                  </SectionCard>
-
-                  <SectionCard
-                    index="09"
-                    title="Control interno"
-                    subtitle="Datos de operación internos para organización del equipo comercial."
-                    accentClass="bg-slate-100 text-slate-700"
-                  >
-                    <div className="grid gap-5">
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <Field label="Asesor responsable">
-                          <select className={selectClass} defaultValue="">
-                            <option value="" disabled>
-                              Seleccionar asesor
-                            </option>
-                            {advisors.map((item) => (
-                              <option key={item}>{item}</option>
-                            ))}
-                          </select>
-                        </Field>
-
-                        <Field label="Estado del inmueble">
-                          <select className={selectClass} defaultValue="">
-                            <option value="" disabled>
-                              Seleccionar estado
-                            </option>
-                            {internalStatuses.map((item) => (
-                              <option key={item}>{item}</option>
-                            ))}
-                          </select>
-                        </Field>
-                      </div>
-
-                      <Field label="Comentarios internos">
-                        <textarea
-                          placeholder="Notas privadas para seguimiento, negociación, documentación o estrategia de publicación."
-                          className={textareaClass}
+                        <AddRow
+                          value={tagDraft} onChange={setTagDraft}
+                          onKeyDown={onEnter(tagDraft, setTags, () => setTagDraft(""))}
+                          onAdd={() => addUnique(tagDraft, setTags, () => setTagDraft(""))}
+                          placeholder="Agregar tag y presiona Enter"
                         />
+                        {tags.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {tags.map((tag, i) => (
+                              <TagBadge key={`${tag}-${i}`} label={tag} onRemove={() => removeAt(setTags, i)} />
+                            ))}
+                          </div>
+                        )}
                       </Field>
-                    </div>
-                  </SectionCard>
+                      <Field label="Fecha de publicación" hint="Opcional">
+                        <input type="datetime-local" className={inputBase} />
+                      </Field>
+                    </Pad>
+                  )}
 
-                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                    <Link
-                      href="/inmuebles"
-                      className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-center text-sm font-medium text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-950"
-                    >
-                      Cancelar
-                    </Link>
-                    <button
-                      type="submit"
-                      className="rounded-2xl bg-slate-950 px-8 py-3 text-sm font-semibold text-white shadow-[0_18px_32px_rgba(15,23,42,0.18)] transition hover:-translate-y-0.5 hover:bg-slate-800"
-                    >
-                      Guardar inmueble
-                    </button>
-                  </div>
+                  {/* 8 · Control */}
+                  {step === 8 && (
+                    <Pad>
+                      <Row>
+                        <Field label="Asesor responsable">
+                          <select className={selectBase} defaultValue="">
+                            <option value="" disabled>Seleccionar asesor</option>
+                            {advisors.map((a) => <option key={a}>{a}</option>)}
+                          </select>
+                        </Field>
+                        <Field label="Estatus">
+                          <select className={selectBase} defaultValue="">
+                            <option value="" disabled>Seleccionar estatus</option>
+                            {internalStatuses.map((s) => <option key={s}>{s}</option>)}
+                          </select>
+                        </Field>
+                      </Row>
+                      <Field label="Comentarios internos">
+                        <textarea placeholder="Notas privadas: seguimiento, negociación, estrategia de publicación..." className={textareaBase} />
+                      </Field>
+                    </Pad>
+                  )}
+
                 </div>
-
-                <aside className="hidden 2xl:block">
-                  <div className="sticky top-6 space-y-6">
-                    <div className="rounded-[2rem] border border-white/80 bg-white/80 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-                        Vista rápida
-                      </p>
-                      <h2 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
-                        Resumen del inmueble
-                      </h2>
-
-                      <div className="mt-6 space-y-4">
-                        <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-                          <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                            Título
-                          </p>
-                          <p className="mt-2 text-sm font-semibold text-slate-900">
-                            {title || "Aún sin título"}
-                          </p>
-                        </div>
-
-                        <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-                          <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                            Slug
-                          </p>
-                          <p className="mt-2 break-all font-mono text-xs text-slate-600">
-                            /inmuebles/{slug || "pendiente"}
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-                            <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                              Amenidades
-                            </p>
-                            <p className="mt-2 text-2xl font-semibold text-slate-950">
-                              {selectedAmenities.length}
-                            </p>
-                          </div>
-                          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-                            <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                              Multimedia
-                            </p>
-                            <p className="mt-2 text-2xl font-semibold text-slate-950">
-                              {mainPhotoNames.length + galleryNames.length}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-                          <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                            JSONB preview
-                          </p>
-                          <pre className="mt-3 overflow-x-auto rounded-[1.25rem] bg-slate-950 p-4 text-xs leading-6 text-slate-200">
-{`{
-  "requisitos": ${JSON.stringify(requirements)},
-  "restricciones": ${JSON.stringify(restrictions)}
-}`}
-                          </pre>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </aside>
               </div>
+
+              {/* ── Navigation ────────────────────────────────────────────── */}
+              <div className="mx-auto flex w-full max-w-2xl items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={prev}
+                  disabled={step === 0}
+                  className="inline-flex items-center gap-2 rounded-full border border-border-soft bg-white px-5 py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:border-brand-secondary hover:text-brand-secondary disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <svg viewBox="0 0 14 14" fill="none" className="h-3.5 w-3.5">
+                    <path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Anterior
+                </button>
+
+                {step < steps.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={next}
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-primary px-5 py-2.5 text-sm font-semibold text-foreground shadow-[0_16px_35px_rgba(210,255,30,0.35)] transition hover:brightness-95"
+                  >
+                    Siguiente
+                    <svg viewBox="0 0 14 14" fill="none" className="h-3.5 w-3.5">
+                      <path d="M5 2l5 5-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-primary px-6 py-2.5 text-sm font-semibold text-foreground shadow-[0_16px_35px_rgba(210,255,30,0.35)] transition hover:brightness-95"
+                  >
+                    Guardar inmueble
+                    <svg viewBox="0 0 14 14" fill="none" className="h-3.5 w-3.5">
+                      <path d="M2 7l3.5 3.5L12 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+
             </form>
           </div>
         </div>
       </AnimatedDashboardBackground>
 
-      <DashboardMobileDock />
     </main>
   );
 }

@@ -1,5 +1,4 @@
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
-import { DashboardMobileDock } from "@/components/dashboard/dashboard-navbar";
 import { NewContactForm } from "@/components/contacts/new-contact-form";
 import { prisma } from "@/lib/prisma";
 
@@ -83,7 +82,6 @@ export default async function NewContactPage({ searchParams }: PageProps) {
           />
         </div>
       </AnimatedDashboardBackground>
-      <DashboardMobileDock />
     </main>
   );
 }

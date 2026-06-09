@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Roboto_Condensed, Shadows_Into_Light } from "next/font/google";
 import "./globals.css";
+import { ContactSearchModalProvider } from "@/components/dashboard/contact-search-button";
+import { DashboardDesktopChrome } from "@/components/dashboard/dashboard-desktop-chrome";
+import { DashboardMobileDock } from "@/components/dashboard/dashboard-navbar";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const robotoCondensed = Roboto_Condensed({
+  variable: "--font-roboto-condensed",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const shadowsIntoLight = Shadows_Into_Light({
+  variable: "--font-shadows-into-light",
   subsets: ["latin"],
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -25,9 +29,17 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${robotoCondensed.variable} ${shadowsIntoLight.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full bg-[var(--background)] font-sans text-[var(--foreground)]">
+        <ContactSearchModalProvider>
+          <DashboardDesktopChrome />
+          <div className="min-h-screen pb-28 lg:pb-0 lg:pl-[22rem] lg:pt-[6rem]">
+            {children}
+          </div>
+          <DashboardMobileDock />
+        </ContactSearchModalProvider>
+      </body>
     </html>
   );
 }
