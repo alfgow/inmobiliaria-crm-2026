@@ -6,7 +6,7 @@ services:
     container_name: inmobiliaria-crm-2026
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "${APP_PORT:-3003}:3000"
     env_file:
       - .env
     networks:
