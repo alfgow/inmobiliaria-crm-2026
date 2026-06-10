@@ -15,7 +15,7 @@ import {
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma } from "../../../generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 

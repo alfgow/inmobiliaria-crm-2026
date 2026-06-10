@@ -7,12 +7,13 @@ type Props = {
   lat: number | null;
   lng: number | null;
   geocoding?: boolean;
-  onPinMove: (lat: number, lng: number) => void;
+  onPinMove?: (lat: number, lng: number) => void;
+  readonly?: boolean;
 };
 
 const CDMX: [number, number] = [-99.1332, 19.4326];
 
-export function PropertyMap({ lat, lng, geocoding, onPinMove }: Props) {
+export function PropertyMap({ lat, lng, geocoding, onPinMove, readonly = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
@@ -46,14 +47,16 @@ export function PropertyMap({ lat, lng, geocoding, onPinMove }: Props) {
         "bottom-right",
       );
 
-      const marker = new mapboxgl.Marker({ draggable: true, color: "#0f172a" })
+      const marker = new mapboxgl.Marker({ draggable: !readonly, color: "#7c3aed" })
         .setLngLat(center)
         .addTo(map);
 
-      marker.on("dragend", () => {
-        const pos = marker.getLngLat();
-        onPinMoveRef.current(pos.lat, pos.lng);
-      });
+      if (!readonly) {
+        marker.on("dragend", () => {
+          const pos = marker.getLngLat();
+          onPinMoveRef.current?.(pos.lat, pos.lng);
+        });
+      }
 
       mapRef.current = map;
       markerRef.current = marker;
@@ -84,9 +87,11 @@ export function PropertyMap({ lat, lng, geocoding, onPinMove }: Props) {
         </div>
       )}
 
-      <div className="absolute bottom-10 left-3 rounded-lg bg-white/90 px-2.5 py-1.5 text-[10px] text-slate-500 shadow-sm backdrop-blur-sm">
-        Arrastra el pin para ajustar la posición exacta
-      </div>
+      {!readonly && (
+        <div className="absolute bottom-10 left-3 rounded-lg bg-white/90 px-2.5 py-1.5 text-[10px] text-slate-500 shadow-sm backdrop-blur-sm">
+          Arrastra el pin para ajustar la posición exacta
+        </div>
+      )}
     </div>
   );
 }

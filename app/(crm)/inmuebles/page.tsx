@@ -1,3 +1,5 @@
+import type React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Bath,
@@ -15,6 +17,7 @@ import {
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import { prisma } from "@/lib/prisma";
 import { isDatabaseUnavailableError } from "@/lib/prisma-error";
+import { getImageUrl } from "@/lib/s3";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +69,17 @@ function shortReference(value: bigint) {
   return `#${value.toString().padStart(5, "0")}`;
 }
 
+function statusBadgeStyle(nombre: string): React.CSSProperties {
+  const n = nombre.toLowerCase();
+  if (n === "disponible")
+    return { backgroundColor: "var(--brand-primary)", color: "var(--brand-text)", borderColor: "rgba(255,255,255,0.2)" };
+  if (n === "reservado")
+    return { backgroundColor: "#f97316", color: "#ffffff", borderColor: "rgba(255,255,255,0.2)" };
+  if (n === "rentado" || n === "vendido")
+    return { backgroundColor: "#ef4444", color: "#ffffff", borderColor: "rgba(255,255,255,0.2)" };
+  return { backgroundColor: "rgba(15,23,42,0.55)", color: "#ffffff", borderColor: "rgba(255,255,255,0.2)" };
+}
+
 function propertyCardGradient(index: number) {
   const palettes = [
     "from-indigo-600 via-violet-500 to-lime-300",
@@ -77,46 +91,44 @@ function propertyCardGradient(index: number) {
   return palettes[index % palettes.length];
 }
 
+type Property = {
+  id: bigint;
+  slug: string;
+  titulo: string;
+  direccion: string;
+  colonia: string | null;
+  municipio: string | null;
+  estado: string | null;
+  codigo_postal: string | null;
+  precio: { toString(): string };
+  destacado: boolean;
+  visible: boolean;
+  created_at: Date | null;
+  habitaciones: number | null;
+  banos: number | null;
+  estacionamientos: number | null;
+  metros_cuadrados: { toString(): string } | null;
+  superficie_construida: { toString(): string } | null;
+  inmueble_estatus: {
+    nombre: string;
+    color: string | null;
+  };
+  coverImageUrl: string | null;
+};
+
 export default async function PropertiesPage() {
-  let properties: Array<{
-    id: bigint;
-    titulo: string;
-    direccion: string;
-    colonia: string | null;
-    municipio: string | null;
-    estado: string | null;
-    codigo_postal: string | null;
-    precio: { toString(): string };
-    destacado: boolean;
-    visible: boolean;
-    created_at: Date | null;
-    habitaciones: number | null;
-    banos: number | null;
-    estacionamientos: number | null;
-    metros_cuadrados: { toString(): string } | null;
-    superficie_construida: { toString(): string } | null;
-    inmueble_estatus: {
-      nombre: string;
-      color: string | null;
-    };
-  }> = [];
+  let properties: Property[] = [];
   let totalProperties = 0;
   let databaseUnavailable = false;
 
   try {
-    [properties, totalProperties] = await Promise.all([
+    const [rawProperties, count] = await Promise.all([
       prisma.inmuebles.findMany({
-        orderBy: [
-          {
-            destacado: "desc",
-          },
-          {
-            created_at: "desc",
-          },
-        ],
+        orderBy: [{ destacado: "desc" }, { created_at: "desc" }],
         take: 6,
         select: {
           id: true,
+          slug: true,
           titulo: true,
           direccion: true,
           colonia: true,
@@ -133,15 +145,55 @@ export default async function PropertiesPage() {
           metros_cuadrados: true,
           superficie_construida: true,
           inmueble_estatus: {
-            select: {
-              nombre: true,
-              color: true,
-            },
+            select: { nombre: true, color: true },
           },
         },
       }),
       prisma.inmuebles.count(),
     ]);
+
+    totalProperties = count;
+
+    // Fetch the first image (por orden) for each property
+    const propertyIds = rawProperties.map((p) => p.id.toString());
+    const rawImages =
+      propertyIds.length > 0
+        ? await prisma.inmueble_imagenes.findMany({
+            where: { inmueble_id: { in: propertyIds } },
+            orderBy: { orden: "asc" },
+            select: { inmueble_id: true, s3_key: true },
+          })
+        : [];
+
+    // Deduplicate: one cover image per property
+    const seenIds = new Set<string>();
+    const coverImages: { inmueble_id: { toString(): string }; s3_key: string }[] = [];
+    for (const img of rawImages) {
+      const key = img.inmueble_id.toString();
+      if (!seenIds.has(key)) {
+        seenIds.add(key);
+        coverImages.push(img);
+      }
+    }
+
+    // Generate presigned URLs in parallel
+    const urlEntries = await Promise.all(
+      coverImages.map(async (img) => {
+        try {
+          const url = await getImageUrl(img.s3_key);
+          return [img.inmueble_id.toString(), url] as const;
+        } catch {
+          return [img.inmueble_id.toString(), null] as const;
+        }
+      }),
+    );
+
+    const coverImageMap = new Map(urlEntries.filter(([, url]) => url !== null) as [string, string][]);
+
+    properties = rawProperties.map((p) => ({
+      ...p,
+      coverImageUrl: coverImageMap.get(p.id.toString()) ?? null,
+    }));
   } catch (error) {
     if (!isDatabaseUnavailableError(error)) {
       throw error;
@@ -250,24 +302,54 @@ export default async function PropertiesPage() {
                   key={property.id.toString()}
                   className="group overflow-hidden rounded-[2rem] border border-border-soft/80 bg-white shadow-[0_22px_55px_rgba(20,16,35,0.08)] transition hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(20,16,35,0.12)]"
                 >
-                  <div
-                    className={[
-                      "relative h-56 overflow-hidden bg-gradient-to-br",
-                      propertyCardGradient(index),
-                    ].join(" ")}
-                  >
-                    <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.04)_40%,rgba(17,24,39,0.22)_100%)]" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_20%_70%,rgba(210,255,30,0.16),transparent_28%)]" />
-                    <div className="absolute left-4 top-4 z-10">
+                  <div className="relative h-56 overflow-hidden">
+                    <Link href={`/inmuebles/${property.slug}`} className="absolute inset-0 block group/img">
+                      {property.coverImageUrl ? (
+                        <>
+                          <Image
+                            src={property.coverImageUrl}
+                            alt={property.titulo}
+                            fill
+                            priority={index === 0}
+                            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                            className="object-cover transition duration-500 group-hover/img:scale-[1.03]"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                        </>
+                      ) : (
+                        <div
+                          className={[
+                            "absolute inset-0 bg-gradient-to-br transition duration-500 group-hover/img:brightness-95",
+                            propertyCardGradient(index),
+                          ].join(" ")}
+                        >
+                          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.04)_40%,rgba(17,24,39,0.22)_100%)]" />
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_20%_70%,rgba(210,255,30,0.16),transparent_28%)]" />
+                        </div>
+                      )}
+                      <div className="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between gap-4 text-white">
+                        <div>
+                          <p className="text-3xl font-semibold tracking-tight">
+                            {formatPrice(property.precio)}
+                          </p>
+                          <p className="mt-1 text-[11px] uppercase tracking-[0.35em] text-white/80">
+                            {shortReference(property.id)}
+                          </p>
+                        </div>
+                        <div className="rounded-full border border-white/15 bg-white/12 px-3 py-2 text-right text-[11px] uppercase tracking-[0.3em] text-white/80 backdrop-blur-sm">
+                          <p>{property.destacado ? "Destacado" : "General"}</p>
+                          <p className="mt-1 text-[10px] tracking-[0.28em] text-white/65">
+                            {property.inmueble_estatus.nombre}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                    <div className="absolute left-4 top-4 z-10 pointer-events-none">
                       <span
-                        className="inline-flex items-center rounded-full border border-white/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-white/95"
-                        style={{
-                          backgroundColor: property.inmueble_estatus.color
-                            ? `${property.inmueble_estatus.color}dd`
-                            : "rgba(15, 23, 42, 0.55)",
-                        }}
+                        className="inline-flex items-center rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em]"
+                        style={statusBadgeStyle(property.inmueble_estatus.nombre)}
                       >
-                        {property.visible ? "Disponible" : "Oculto"}
+                        {property.inmueble_estatus.nombre}
                       </span>
                     </div>
                     <button
@@ -277,36 +359,22 @@ export default async function PropertiesPage() {
                     >
                       <Heart className="size-4" />
                     </button>
-                    <div className="absolute bottom-4 left-4 right-4 z-10 flex items-end justify-between gap-4 text-white">
-                      <div>
-                        <p className="text-3xl font-semibold tracking-tight">
-                          {formatPrice(property.precio)}
-                        </p>
-                        <p className="mt-1 text-[11px] uppercase tracking-[0.35em] text-white/80">
-                          {shortReference(property.id)}
-                        </p>
-                      </div>
-                      <div className="rounded-full border border-white/15 bg-white/12 px-3 py-2 text-right text-[11px] uppercase tracking-[0.3em] text-white/80 backdrop-blur-sm">
-                        <p>{property.destacado ? "Destacado" : "General"}</p>
-                        <p className="mt-1 text-[10px] tracking-[0.28em] text-white/65">
-                          {property.inmueble_estatus.nombre}
-                        </p>
-                      </div>
-                    </div>
                   </div>
 
                   <div className="space-y-4 p-5 sm:p-6">
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-xl font-semibold leading-tight tracking-tight text-brand-text">
-                          {property.titulo}
+                        <h3 className="text-xl font-semibold leading-tight tracking-tight text-brand-text transition hover:text-brand-secondary">
+                          <Link href={`/inmuebles/${property.slug}`}>
+                            {property.titulo}
+                          </Link>
                         </h3>
-                        <button
-                          type="button"
+                        <Link
+                          href={`/inmuebles/${property.slug}`}
                           className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-border-soft bg-brand-surface transition hover:border-brand-secondary hover:text-brand-secondary"
                         >
                           <ChevronRight className="size-4" />
-                        </button>
+                        </Link>
                       </div>
 
                       <div className="space-y-1 text-sm text-brand-text/70">
