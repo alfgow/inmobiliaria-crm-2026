@@ -3,17 +3,18 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   Bot,
-  Building2,
   CalendarDays,
   Clock3,
   Mail,
   MessageSquareText,
+  Pencil,
   Phone,
   Sparkles,
   UserRound,
 } from "lucide-react";
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
+import { ContactInterestsCard } from "@/features/contacts/components/contact-interests-card";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "../../../generated/prisma/client";
 
@@ -30,20 +31,6 @@ function formatDate(value: Date | null) {
   }).format(value);
 }
 
-function formatMoney(value: unknown) {
-  const amount = Number(value ?? 0);
-
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0);
-}
-
-function formatDimension(value: unknown) {
-  const amount = Number(value ?? 0);
-  return Number.isFinite(amount) ? `${amount.toLocaleString("es-MX")} m²` : "—";
-}
 
 function getInitials(name: string) {
   return name
@@ -89,6 +76,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
     totalInterests,
     totalComments,
     totalIaInteractions,
+    allActiveProperties,
   ] = await Promise.all([
     prisma.contactos.findFirst({
       where: { id: contactId },
@@ -106,6 +94,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
       where: { contacto_id: contactIdDecimal },
       orderBy: { created_at: "desc" },
       select: {
+        id: true,
         inmueble_id: true,
         created_at: true,
       },
@@ -138,6 +127,17 @@ export default async function ContactDetailPage({ params }: PageProps) {
     }),
     prisma.interacciones_ia.count({
       where: { contacto_id: contactIdDecimal },
+    }),
+    prisma.inmuebles.findMany({
+      where: { estatus_id: 1 },
+      orderBy: { updated_at: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        titulo: true,
+        precio: true,
+        direccion: true,
+      },
     }),
   ]);
 
@@ -174,6 +174,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
       }
 
       return {
+        interestId: interest.id.toString(),
         property,
         createdAt: interest.created_at,
       };
@@ -182,6 +183,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
       (
         item,
       ): item is {
+        interestId: string;
         property: (typeof properties)[number];
         createdAt: Date | null;
       } => item !== null,
@@ -216,7 +218,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
     timeline[0]?.createdAt ?? contact.updated_at ?? contact.created_at;
 
   return (
-    <main className="relative isolate min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-slate-50 px-4 py-6 text-zinc-950 sm:px-6 lg:px-10">
+    <main className="relative isolate min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-slate-50 px-4 py-6 pb-28 text-zinc-950 sm:px-6 lg:px-10 lg:pb-6">
       <AnimatedDashboardBackground>
         <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
           <div className="flex items-center justify-between gap-4">
@@ -228,8 +230,18 @@ export default async function ContactDetailPage({ params }: PageProps) {
               Volver a contactos
             </Link>
 
-            <div className="rounded-full border border-white/10 bg-zinc-950 px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] text-zinc-300 shadow-2xl">
-              Vista de contacto
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/contactos/${id}/editar`}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:text-slate-950"
+              >
+                <Pencil className="h-4 w-4" />
+                Editar
+              </Link>
+
+              <div className="hidden rounded-full border border-white/10 bg-zinc-950 px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] text-zinc-300 shadow-2xl sm:block">
+                Vista de contacto
+              </div>
             </div>
           </div>
 
@@ -373,98 +385,35 @@ export default async function ContactDetailPage({ params }: PageProps) {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-600 text-white">
-                  <Building2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
-                    Intereses
-                  </p>
-                  <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
-                    Propiedades que le interesan
-                  </h2>
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-4">
-                {interestedProperties.length > 0 ? (
-                  interestedProperties.map(({ property, createdAt }) => {
-                    const propertyRecord = property as typeof property & {
-                      tipo?: unknown;
-                      operacion?: unknown;
-                    };
-
-                    return (
-                      <div
-                        key={property.id.toString()}
-                        className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5"
-                      >
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-sky-700">
-                                {String(propertyRecord.tipo ?? "Tipo")}
-                              </span>
-                              <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-violet-700">
-                                {String(propertyRecord.operacion ?? "Operación")}
-                              </span>
-                            </div>
-                            <h3 className="text-lg font-semibold text-slate-950">
-                              {property.titulo}
-                            </h3>
-                            <p className="max-w-2xl text-sm leading-6 text-slate-600">
-                              {property.direccion}
-                            </p>
-                          </div>
-
-                          <div className="rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-right">
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                              Precio
-                            </p>
-                            <p className="mt-1 text-lg font-semibold text-slate-950">
-                              {formatMoney(property.precio)}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                          <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                              Estatus
-                            </p>
-                            <p className="mt-1 text-sm font-medium text-slate-950">
-                              {property.inmueble_estatus.nombre}
-                            </p>
-                          </div>
-                          <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                              Metros
-                            </p>
-                            <p className="mt-1 text-sm font-medium text-slate-950">
-                              {formatDimension(property.metros_cuadrados)}
-                            </p>
-                          </div>
-                          <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                              Interés
-                            </p>
-                            <p className="mt-1 text-sm font-medium text-slate-950">
-                              {formatDate(createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-sm text-slate-600">
-                    Todavía no hay propiedades asociadas a este contacto.
-                  </div>
-                )}
-              </div>
-            </div>
+            <ContactInterestsCard
+              contactId={contact.id.toString()}
+              initialInterests={interestedProperties.map(
+                ({ interestId, property, createdAt }) => {
+                  const p = property as typeof property & {
+                    tipo?: unknown;
+                    operacion?: unknown;
+                  };
+                  return {
+                    interestId,
+                    inmuebleId: property.id.toString(),
+                    titulo: property.titulo,
+                    direccion: property.direccion,
+                    precio: property.precio.toString(),
+                    tipo: String(p.tipo ?? "—"),
+                    operacion: String(p.operacion ?? "—"),
+                    estatus: property.inmueble_estatus.nombre,
+                    metros: property.metros_cuadrados?.toString() ?? "0",
+                    createdAt: createdAt?.toISOString() ?? null,
+                  };
+                },
+              )}
+              availableProperties={allActiveProperties.map((p) => ({
+                id: p.id.toString(),
+                titulo: p.titulo,
+                precio: p.precio.toString(),
+                direccion: p.direccion,
+              }))}
+            />
           </section>
 
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
@@ -499,11 +448,11 @@ export default async function ContactDetailPage({ params }: PageProps) {
                           >
                             <Icon className="h-5 w-5" />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-sm font-semibold text-slate-950">
                               {item.title}
                             </p>
-                            <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">
+                            <p className="mt-2 break-words text-sm leading-7 text-slate-600">
                               {item.body}
                             </p>
                           </div>
