@@ -1,5 +1,7 @@
-import { prisma } from "@/lib/prisma";
 import { Prisma } from "../../../../app/generated/prisma/client";
+
+import { prisma } from "@/lib/prisma";
+
 import type { MapProperty } from "../types/map";
 
 type RawRow = {
@@ -37,18 +39,18 @@ export async function getMapProperties(): Promise<MapProperty[]> {
     ORDER BY i.created_at DESC
   `);
 
-  return rows.map((r) => ({
-    id: r.id.toString(),
-    titulo: r.titulo,
-    precio: Number(r.precio),
-    direccion: r.direccion,
-    colonia: r.colonia,
-    municipio: r.municipio,
-    tipo: r.tipo,
-    operacion: r.operacion,
-    estatus: r.estatus_nombre,
-    available: r.estatus_nombre.toLowerCase().includes("disponible"),
-    lat: Number(r.latitud),
-    lng: Number(r.longitud),
+  return rows.map((row) => ({
+    id: row.id.toString(),
+    titulo: row.titulo,
+    precio: Number(row.precio),
+    direccion: row.direccion,
+    colonia: row.colonia,
+    municipio: row.municipio,
+    tipo: row.tipo,
+    operacion: row.operacion,
+    estatus: row.estatus_nombre,
+    available: row.estatus_nombre.toLowerCase().includes("disponible"),
+    lat: Number(row.latitud),
+    lng: Number(row.longitud),
   }));
 }
