@@ -18,6 +18,11 @@ type RawRow = {
   estatus_nombre: string;
 };
 
+function parseCoordinate(value: string): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export async function getMapProperties(): Promise<MapProperty[]> {
   const rows = await prisma.$queryRaw<RawRow[]>(Prisma.sql`
     SELECT
@@ -39,18 +44,29 @@ export async function getMapProperties(): Promise<MapProperty[]> {
     ORDER BY i.created_at DESC
   `);
 
-  return rows.map((row) => ({
-    id: row.id.toString(),
-    titulo: row.titulo,
-    precio: Number(row.precio),
-    direccion: row.direccion,
-    colonia: row.colonia,
-    municipio: row.municipio,
-    tipo: row.tipo,
-    operacion: row.operacion,
-    estatus: row.estatus_nombre,
-    available: row.estatus_nombre.toLowerCase().includes("disponible"),
-    lat: Number(row.latitud),
-    lng: Number(row.longitud),
-  }));
+  return rows.flatMap((row) => {
+    const lat = parseCoordinate(row.latitud);
+    const lng = parseCoordinate(row.longitud);
+
+    if (lat === null || lng === null) {
+      return [];
+    }
+
+    return [
+      {
+        id: row.id.toString(),
+        titulo: row.titulo,
+        precio: Number(row.precio),
+        direccion: row.direccion,
+        colonia: row.colonia,
+        municipio: row.municipio,
+        tipo: row.tipo,
+        operacion: row.operacion,
+        estatus: row.estatus_nombre,
+        available: row.estatus_nombre.toLowerCase().includes("disponible"),
+        lat,
+        lng,
+      },
+    ];
+  });
 }

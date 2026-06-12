@@ -1,6 +1,7 @@
 "use client";
 
 import "mapbox-gl/dist/mapbox-gl.css";
+import type { Map as MapboxMap, MapLayerMouseEvent } from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 
 import type { MapProperty } from "../types/map";
@@ -42,16 +43,37 @@ function buildPopupHtml(property: Record<string, unknown>): string {
 type Props = {
   properties: MapProperty[];
   mapStyle: string;
+  mapboxToken: string;
 };
 
-export function PropertiesMapView({ properties, mapStyle }: Props) {
+export function PropertiesMapView({ properties, mapStyle, mapboxToken }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<MapboxMap | null>(null);
   const [showAvailable, setShowAvailable] = useState(true);
   const [showUnavailable, setShowUnavailable] = useState(true);
 
-  const available = properties.filter((property) => property.available);
-  const unavailable = properties.filter((property) => !property.available);
+  const validProperties = properties.filter(
+    (property) => Number.isFinite(property.lat) && Number.isFinite(property.lng),
+  );
+  const available = validProperties.filter((property) => property.available);
+  const unavailable = validProperties.filter((property) => !property.available);
+  const hasToken = mapboxToken.trim().length > 0;
+  const overlayMessage = !hasToken
+    ? {
+        title: "Falta configurar el token de Mapbox.",
+        body: (
+          <>
+            Define <code>MAPBOX_TOKEN</code> o <code>NEXT_PUBLIC_MAPBOX_TOKEN</code>
+            para poder cargar el mapa.
+          </>
+        ),
+      }
+    : !validProperties.length
+      ? {
+          title: "Ningún inmueble tiene coordenadas registradas.",
+          body: <>Edita un inmueble para fijar su ubicación en el mapa.</>,
+        }
+      : null;
 
   function toggleLayer(layerId: string, visible: boolean) {
     const map = mapRef.current;
@@ -60,7 +82,7 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
   }
 
   useEffect(() => {
-    if (!containerRef.current || !properties.length) return;
+    if (!containerRef.current || !validProperties.length || !hasToken) return;
 
     let cancelled = false;
 
@@ -68,10 +90,10 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
       const mapboxgl = (await import("mapbox-gl")).default;
       if (cancelled || !containerRef.current) return;
 
-      mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+      mapboxgl.accessToken = mapboxToken;
 
-      const lngs = properties.map((property) => property.lng);
-      const lats = properties.map((property) => property.lat);
+      const lngs = validProperties.map((property) => property.lng);
+      const lats = validProperties.map((property) => property.lat);
       const centerLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
       const centerLat = lats.reduce((a, b) => a + b, 0) / lats.length;
 
@@ -90,7 +112,7 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
 
         const geojson: GeoJSON.FeatureCollection = {
           type: "FeatureCollection",
-          features: properties.map((property) => ({
+          features: validProperties.map((property) => ({
             type: "Feature",
             geometry: { type: "Point", coordinates: [property.lng, property.lat] },
             properties: {
@@ -144,11 +166,12 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
           className: "crm-popup",
         });
 
-        const handleClick = (event: any) => {
+        const handleClick = (event: MapLayerMouseEvent) => {
           const feature = event.features?.[0];
-          if (!feature) return;
+          if (!feature || feature.geometry.type !== "Point") return;
           const coords = feature.geometry.coordinates.slice() as [number, number];
-          popup.setLngLat(coords).setHTML(buildPopupHtml(feature.properties)).addTo(map);
+          const popupProps = (feature.properties ?? {}) as Record<string, unknown>;
+          popup.setLngLat(coords).setHTML(buildPopupHtml(popupProps)).addTo(map);
         };
 
         map.on("click", "properties-available", handleClick);
@@ -262,15 +285,11 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
         </div>
       </div>
 
-      {!properties.length && (
+      {overlayMessage && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="rounded-xl border bg-white/90 px-8 py-6 text-center shadow-lg backdrop-blur-sm">
-            <p className="text-sm font-medium text-slate-700">
-              Ningún inmueble tiene coordenadas registradas.
-            </p>
-            <p className="mt-1 text-xs text-slate-400">
-              Edita un inmueble para fijar su ubicación en el mapa.
-            </p>
+          <div className="max-w-sm rounded-xl border bg-white/90 px-8 py-6 text-center shadow-lg backdrop-blur-sm">
+            <p className="text-sm font-medium text-slate-700">{overlayMessage.title}</p>
+            <p className="mt-1 text-xs text-slate-400">{overlayMessage.body}</p>
           </div>
         </div>
       )}
