@@ -10,12 +10,17 @@ export default async function MapaPage() {
     process.env.MAPBOX_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
   return (
-    <div className="-mt-6 h-[calc(100dvh-7rem)] overflow-hidden lg:-mt-0 lg:h-[calc(100dvh-6rem)]">
-      <PropertiesMapView
-        properties={properties}
-        mapStyle={mapStyle}
-        mapboxToken={mapboxToken}
-      />
+    <div className="px-4 pb-6 pt-4 lg:px-8 lg:pb-8 lg:pt-6">
+      <div
+        className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm"
+        style={{ height: "calc(100dvh - 10rem)" }}
+      >
+        <PropertiesMapView
+          properties={properties}
+          mapStyle={mapStyle}
+          mapboxToken={mapboxToken}
+        />
+      </div>
     </div>
   );
 }
