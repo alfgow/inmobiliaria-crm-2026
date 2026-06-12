@@ -2,6 +2,7 @@
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef, useState } from "react";
+
 import type { MapProperty } from "../types/map";
 
 const COLOR_AVAILABLE = "#d2ff1e";
@@ -13,26 +14,26 @@ const PRICE_FMT = new Intl.NumberFormat("es-MX", {
   maximumFractionDigits: 0,
 });
 
-function buildPopupHtml(p: Record<string, unknown>): string {
-  const price = PRICE_FMT.format(p.precio as number);
-  const tipo = (p.tipo as string).replace(/_/g, " ");
-  const operacion = (p.operacion as string).replace(/_/g, " ");
-  const location = [p.colonia, p.municipio].filter(Boolean).join(", ");
-  const dotColor = p.available ? COLOR_AVAILABLE : COLOR_UNAVAILABLE;
-  const dotBorder = p.available ? "#1a1a1a" : "#fff";
+function buildPopupHtml(property: Record<string, unknown>): string {
+  const price = PRICE_FMT.format(property.precio as number);
+  const tipo = (property.tipo as string).replace(/_/g, " ");
+  const operacion = (property.operacion as string).replace(/_/g, " ");
+  const location = [property.colonia, property.municipio].filter(Boolean).join(", ");
+  const dotColor = property.available ? COLOR_AVAILABLE : COLOR_UNAVAILABLE;
+  const dotBorder = property.available ? "#1a1a1a" : "#fff";
 
   return `
     <div class="crm-popup-inner">
-      <p class="crm-popup-title">${p.titulo}</p>
+      <p class="crm-popup-title">${property.titulo}</p>
       <p class="crm-popup-price">${price}</p>
       <div class="crm-popup-chips">
         <span class="crm-chip">${tipo}</span>
         <span class="crm-chip">${operacion}</span>
       </div>
-      <p class="crm-popup-address">${p.direccion}${location ? ` · ${location}` : ""}</p>
+      <p class="crm-popup-address">${property.direccion}${location ? ` · ${location}` : ""}</p>
       <p class="crm-popup-status">
         <span class="crm-popup-dot" style="background:${dotColor};border-color:${dotBorder}"></span>
-        ${p.estatus}
+        ${property.estatus}
       </p>
     </div>
   `;
@@ -49,8 +50,8 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
   const [showAvailable, setShowAvailable] = useState(true);
   const [showUnavailable, setShowUnavailable] = useState(true);
 
-  const available = properties.filter((p) => p.available);
-  const unavailable = properties.filter((p) => !p.available);
+  const available = properties.filter((property) => property.available);
+  const unavailable = properties.filter((property) => !property.available);
 
   function toggleLayer(layerId: string, visible: boolean) {
     const map = mapRef.current;
@@ -60,6 +61,7 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
 
   useEffect(() => {
     if (!containerRef.current || !properties.length) return;
+
     let cancelled = false;
 
     (async () => {
@@ -68,8 +70,8 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
 
       mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
-      const lngs = properties.map((p) => p.lng);
-      const lats = properties.map((p) => p.lat);
+      const lngs = properties.map((property) => property.lng);
+      const lats = properties.map((property) => property.lat);
       const centerLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
       const centerLat = lats.reduce((a, b) => a + b, 0) / lats.length;
 
@@ -81,30 +83,27 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
         attributionControl: false,
       });
 
-      map.addControl(
-        new mapboxgl.NavigationControl({ showCompass: false }),
-        "bottom-right",
-      );
+      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
 
       map.on("load", () => {
         if (cancelled) return;
 
         const geojson: GeoJSON.FeatureCollection = {
           type: "FeatureCollection",
-          features: properties.map((p) => ({
+          features: properties.map((property) => ({
             type: "Feature",
-            geometry: { type: "Point", coordinates: [p.lng, p.lat] },
+            geometry: { type: "Point", coordinates: [property.lng, property.lat] },
             properties: {
-              id: p.id,
-              titulo: p.titulo,
-              precio: p.precio,
-              direccion: p.direccion,
-              colonia: p.colonia ?? "",
-              municipio: p.municipio ?? "",
-              tipo: p.tipo,
-              operacion: p.operacion,
-              estatus: p.estatus,
-              available: p.available,
+              id: property.id,
+              titulo: property.titulo,
+              precio: property.precio,
+              direccion: property.direccion,
+              colonia: property.colonia ?? "",
+              municipio: property.municipio ?? "",
+              tipo: property.tipo,
+              operacion: property.operacion,
+              estatus: property.estatus,
+              available: property.available,
             },
           })),
         };
@@ -145,8 +144,8 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
           className: "crm-popup",
         });
 
-        const handleClick = (e: any) => {
-          const feature = e.features?.[0];
+        const handleClick = (event: any) => {
+          const feature = event.features?.[0];
           if (!feature) return;
           const coords = feature.geometry.coordinates.slice() as [number, number];
           popup.setLngLat(coords).setHTML(buildPopupHtml(feature.properties)).addTo(map);
@@ -154,12 +153,20 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
 
         map.on("click", "properties-available", handleClick);
         map.on("click", "properties-unavailable", handleClick);
-        map.on("mouseenter", "properties-available", () => { map.getCanvas().style.cursor = "pointer"; });
-        map.on("mouseenter", "properties-unavailable", () => { map.getCanvas().style.cursor = "pointer"; });
-        map.on("mouseleave", "properties-available", () => { map.getCanvas().style.cursor = ""; });
-        map.on("mouseleave", "properties-unavailable", () => { map.getCanvas().style.cursor = ""; });
-        map.on("click", (e) => {
-          const features = map.queryRenderedFeatures(e.point, {
+        map.on("mouseenter", "properties-available", () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseenter", "properties-unavailable", () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", "properties-available", () => {
+          map.getCanvas().style.cursor = "";
+        });
+        map.on("mouseleave", "properties-unavailable", () => {
+          map.getCanvas().style.cursor = "";
+        });
+        map.on("click", (event) => {
+          const features = map.queryRenderedFeatures(event.point, {
             layers: ["properties-available", "properties-unavailable"],
           });
           if (!features.length) popup.remove();
@@ -180,7 +187,6 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
 
-      {/* Stats panel */}
       <div className="absolute left-4 top-4 rounded-xl border border-white/30 bg-white/90 px-5 py-4 shadow-lg backdrop-blur-sm">
         <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
           Inmuebles en mapa
@@ -210,13 +216,13 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
         </div>
       </div>
 
-      {/* Legend + filter */}
       <div className="absolute bottom-10 left-4 rounded-xl border border-white/30 bg-white/90 px-4 py-3 shadow-lg backdrop-blur-sm">
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
           Filtrar
         </p>
         <div className="flex flex-col gap-1.5">
           <button
+            type="button"
             onClick={() => {
               const next = !showAvailable;
               setShowAvailable(next);
@@ -233,6 +239,7 @@ export function PropertiesMapView({ properties, mapStyle }: Props) {
             <span className="ml-auto text-slate-400">{available.length}</span>
           </button>
           <button
+            type="button"
             onClick={() => {
               const next = !showUnavailable;
               setShowUnavailable(next);

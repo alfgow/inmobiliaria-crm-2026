@@ -17,11 +17,18 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      controller.abort();
+    }, 10000);
+
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        cache: "no-store",
+        signal: controller.signal,
       });
 
       if (res.ok) {
@@ -30,10 +37,15 @@ export default function LoginPage() {
       } else {
         const data = await res.json();
         setError(data.error ?? "Error al iniciar sesión");
-        setLoading(false);
       }
-    } catch {
-      setError("No se pudo conectar con el servidor");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setError("El inicio de sesión tardó demasiado. Intenta de nuevo.");
+      } else {
+        setError("No se pudo conectar con el servidor");
+      }
+    } finally {
+      window.clearTimeout(timeoutId);
       setLoading(false);
     }
   }
