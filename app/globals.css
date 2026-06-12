@@ -55,6 +55,86 @@ body {
   background: rgba(124, 58, 237, 0.18);
 }
 
+/* Mapbox popup overrides */
+.crm-popup .mapboxgl-popup-content {
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.12),
+    0 1px 4px rgba(0, 0, 0, 0.06);
+  font-family: var(--font-sans);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.crm-popup .mapboxgl-popup-tip {
+  border-top-color: #ffffff;
+}
+
+.crm-popup-inner {
+  font-size: 13px;
+  color: #2c2c2c;
+}
+
+.crm-popup-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #2c2c2c;
+}
+
+.crm-popup-price {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c2c2c;
+}
+
+.crm-popup-chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.crm-chip {
+  background: #f1efeb;
+  color: #2c2c2c;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  text-transform: capitalize;
+  font-weight: 500;
+}
+
+.crm-popup-address {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: #888;
+  line-height: 1.4;
+}
+
+.crm-popup-status {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #555;
+  text-transform: capitalize;
+}
+
+.crm-popup-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border-width: 1.5px;
+  border-style: solid;
+  flex-shrink: 0;
+}
+
 .scrollbar-hide {
   scrollbar-width: none;
   -ms-overflow-style: none;
