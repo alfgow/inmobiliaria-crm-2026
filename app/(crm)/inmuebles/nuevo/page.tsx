@@ -41,6 +41,7 @@ import {
   LocationSection,
   type LocationValue,
 } from "@/features/properties/components/location-section";
+import { applyWatermark } from "@/lib/watermark";
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -380,13 +381,15 @@ function PhotoGalleryField({
   );
 
   const handleDrop = useCallback(
-    (acceptedFiles: File[]) => {
-      const nextPhotos = acceptedFiles.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        name: file.name,
-        previewUrl: URL.createObjectURL(file),
-      }));
+    async (acceptedFiles: File[]) => {
+      const nextPhotos = await Promise.all(
+        acceptedFiles.map(async (file) => ({
+          id: crypto.randomUUID(),
+          file: await applyWatermark(file),
+          name: file.name,
+          previewUrl: URL.createObjectURL(file),
+        })),
+      );
 
       onChange((current) => [...current, ...nextPhotos]);
     },

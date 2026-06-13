@@ -38,6 +38,7 @@ import {
   deletePropertyImage,
   reorderPropertyImages,
 } from "@/features/properties/actions/manage-images";
+import { applyWatermark } from "@/lib/watermark";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -653,18 +654,20 @@ export function PropertyEditForm({
 
         (async () => {
           try {
+            const watermarkedFile = await applyWatermark(file);
+
             const presignRes = await fetch("/api/upload/presign", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ key: s3Key, contentType: file.type }),
+              body: JSON.stringify({ key: s3Key, contentType: watermarkedFile.type }),
             });
             if (!presignRes.ok) throw new Error("Presign failed");
             const { url: uploadUrl } = (await presignRes.json()) as { url: string };
 
             const uploadRes = await fetch(uploadUrl, {
               method: "PUT",
-              body: file,
-              headers: { "Content-Type": file.type },
+              body: watermarkedFile,
+              headers: { "Content-Type": watermarkedFile.type },
             });
             if (!uploadRes.ok) throw new Error("Upload failed");
 
