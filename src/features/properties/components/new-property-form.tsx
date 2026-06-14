@@ -167,6 +167,12 @@ function parseNumericValue(value: string) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function parseCoordinate(value: string): number | null {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function formatCurrencyInput(value: string) {
   return new Intl.NumberFormat("es-MX", {
     style: "currency", currency: "MXN", maximumFractionDigits: 0,
@@ -638,8 +644,8 @@ export function NewPropertyForm({ statuses, advisors }: NewPropertyFormProps) {
         municipio: locationValue.municipio || null,
         estado: locationValue.estado || null,
         codigo_postal: locationValue.cp || null,
-        latitud: locationValue.lat ? parseFloat(locationValue.lat) : null,
-        longitud: locationValue.lng ? parseFloat(locationValue.lng) : null,
+        latitud: parseCoordinate(locationValue.lat),
+        longitud: parseCoordinate(locationValue.lng),
         video_url: videoUrl || null,
         tour_virtual_url: tourVirtualUrl || null,
         amenidades: selectedAmenities,

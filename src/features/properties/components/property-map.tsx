@@ -2,6 +2,7 @@
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef } from "react";
+import type { Map as MapboxMap, Marker } from "mapbox-gl";
 
 type Props = {
   lat: number | null;
@@ -13,18 +14,25 @@ type Props = {
 
 const CDMX: [number, number] = [-99.1332, 19.4326];
 
+function isFiniteCoordinate(value: number | null): value is number {
+  return value !== null && Number.isFinite(value);
+}
+
 export function PropertyMap({ lat, lng, geocoding, onPinMove, readonly = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const mapRef = useRef<MapboxMap | null>(null);
+  const markerRef = useRef<Marker | null>(null);
   const onPinMoveRef = useRef(onPinMove);
-  onPinMoveRef.current = onPinMove;
+
+  useEffect(() => {
+    onPinMoveRef.current = onPinMove;
+  }, [onPinMove]);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     const center: [number, number] =
-      lat !== null && lng !== null ? [lng, lat] : CDMX;
+      isFiniteCoordinate(lat) && isFiniteCoordinate(lng) ? [lng, lat] : CDMX;
 
     let cancelled = false;
 
@@ -38,7 +46,7 @@ export function PropertyMap({ lat, lng, geocoding, onPinMove, readonly = false }
         container: containerRef.current,
         style: "mapbox://styles/alfgow/cmgnbz7aw000u01ry7bnx7rzp",
         center,
-        zoom: lat !== null ? 15 : 11,
+        zoom: isFiniteCoordinate(lat) && isFiniteCoordinate(lng) ? 15 : 11,
         attributionControl: false,
       });
 
@@ -71,7 +79,7 @@ export function PropertyMap({ lat, lng, geocoding, onPinMove, readonly = false }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!markerRef.current || lat === null || lng === null) return;
+    if (!markerRef.current || !isFiniteCoordinate(lat) || !isFiniteCoordinate(lng)) return;
     markerRef.current.setLngLat([lng, lat]);
     mapRef.current?.flyTo({ center: [lng, lat], zoom: 15, duration: 1200 });
   }, [lat, lng]);

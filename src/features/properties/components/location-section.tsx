@@ -18,6 +18,12 @@ export type LocationValue = {
   lng: string;
 };
 
+function parseCoordinate(value: string): number | null {
+  if (!value) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 // ── Lazy map (no SSR) ─────────────────────────────────────────────────────────
 
 const PropertyMap = dynamic(
@@ -156,9 +162,15 @@ export function LocationSection({
 
   // Stable refs — always hold the latest value/onChange without being in effect deps
   const valueRef = useRef(value);
-  valueRef.current = value;
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   const set = (partial: Partial<LocationValue>) =>
     onChangeRef.current({ ...valueRef.current, ...partial });
@@ -271,13 +283,12 @@ export function LocationSection({
     return () => {
       if (geocodeTimer.current) clearTimeout(geocodeTimer.current);
     };
-  // Trigger only on text changes, never on lat/lng changes to avoid loops
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value.address, value.colonia, value.municipio, value.estado]);
 
   // ── Pin drag ────────────────────────────────────────────────────────────────
 
   const handlePinMove = (lat: number, lng: number) => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
     onChangeRef.current({
       ...valueRef.current,
       lat: lat.toFixed(6),
@@ -287,8 +298,8 @@ export function LocationSection({
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  const parsedLat = value.lat ? parseFloat(value.lat) : null;
-  const parsedLng = value.lng ? parseFloat(value.lng) : null;
+  const parsedLat = parseCoordinate(value.lat);
+  const parsedLng = parseCoordinate(value.lng);
   const hasCoords = parsedLat !== null && parsedLng !== null;
 
   return (

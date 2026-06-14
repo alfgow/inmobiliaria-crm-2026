@@ -64,6 +64,12 @@ function operationBadge(op: string) {
 
 type RequisitosJson = { requisitos?: string[]; restricciones?: string[] };
 
+function parseCoordinate(value: { toString(): string } | null): number | null {
+  if (!value) return null;
+  const parsed = Number(value.toString());
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function StatCard({
@@ -202,10 +208,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const requisitos = req?.requisitos ?? [];
   const restricciones = req?.restricciones ?? [];
 
-  const lat =
-    property.latitud ? Number(property.latitud.toString()) : null;
-  const lng =
-    property.longitud ? Number(property.longitud.toString()) : null;
+  const lat = parseCoordinate(property.latitud);
+  const lng = parseCoordinate(property.longitud);
   const hasCoords = lat !== null && lng !== null;
 
 

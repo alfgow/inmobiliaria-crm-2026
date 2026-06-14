@@ -568,8 +568,8 @@ export function PropertyEditForm({
       municipio: municipio || null,
       estado: estado || null,
       codigo_postal: codigoPostal || null,
-      latitud: latitud ? parseFloat(latitud) : null,
-      longitud: longitud ? parseFloat(longitud) : null,
+      latitud: parseCoordinate(latitud),
+      longitud: parseCoordinate(longitud),
       video_url: videoUrl || null,
       tour_virtual_url: tourVirtualUrl || null,
       amenidades,
@@ -722,6 +722,12 @@ export function PropertyEditForm({
     setter((cur) => (cur.includes(v) ? cur : [...cur, v]));
     clearDraft();
   };
+
+  function parseCoordinate(value: string): number | null {
+    if (!value.trim()) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
