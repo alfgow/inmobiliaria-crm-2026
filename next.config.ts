@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: `${process.env.AWS_BUCKET}.s3.${process.env.AWS_DEFAULT_REGION}.amazonaws.com`,
+        hostname: "inmuebles-alfgow.s3.mx-central-1.amazonaws.com",
       },
     ],
   },
