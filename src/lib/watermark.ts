@@ -7,6 +7,7 @@ const EXPORT_QUALITY = 0.92;
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.decoding = "async";
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = src;
@@ -36,9 +37,14 @@ export async function applyWatermark(file: File): Promise<File> {
     const x = sourceImg.naturalWidth - wmWidth - padding;
     const y = sourceImg.naturalHeight - wmHeight - padding;
 
+    ctx.save();
     ctx.globalAlpha = WATERMARK_ALPHA;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.shadowColor = "rgba(0, 0, 0, 0.20)";
+    ctx.shadowBlur = Math.max(6, Math.round(sourceImg.naturalWidth * 0.008));
+    ctx.shadowOffsetY = 2;
     ctx.drawImage(wmImg, x, y, wmWidth, wmHeight);
-    ctx.globalAlpha = 1;
+    ctx.restore();
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
