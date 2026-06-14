@@ -381,6 +381,7 @@ function SortableImageTile({
           alt={`Imagen ${index + 1}`}
           fill
           sizes="(max-width: 768px) 50vw, 25vw"
+          unoptimized
           className="object-cover"
         />
 
