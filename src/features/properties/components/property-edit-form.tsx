@@ -641,21 +641,29 @@ export function PropertyEditForm({
     (acceptedFiles: File[]) => {
       for (const file of acceptedFiles) {
         const uid = crypto.randomUUID();
-        const previewUrl = URL.createObjectURL(file);
-        imagePreviewUrls.current.push(previewUrl);
-
-        setUploadingImages((prev) => [
-          ...prev,
-          { uid, name: file.name, previewUrl, state: "uploading" },
-        ]);
-
         const ext = file.name.split(".").pop() ?? "jpg";
         const s3Key = `inmuebles/${propertyId}/${uid}.${ext}`;
         const nextOrden = images.length + uploadingImages.length;
 
+        // Show original immediately while watermark is being processed
+        const tempUrl = URL.createObjectURL(file);
+        imagePreviewUrls.current.push(tempUrl);
+        setUploadingImages((prev) => [
+          ...prev,
+          { uid, name: file.name, previewUrl: tempUrl, state: "uploading" },
+        ]);
+
         (async () => {
           try {
             const watermarkedFile = await applyWatermark(file);
+
+            // Swap preview to watermarked version
+            const watermarkedUrl = URL.createObjectURL(watermarkedFile);
+            imagePreviewUrls.current.push(watermarkedUrl);
+            URL.revokeObjectURL(tempUrl);
+            setUploadingImages((prev) =>
+              prev.map((u) => u.uid === uid ? { ...u, previewUrl: watermarkedUrl } : u),
+            );
 
             const presignRes = await fetch("/api/upload/presign", {
               method: "POST",
@@ -675,14 +683,10 @@ export function PropertyEditForm({
             const result = await addPropertyImage(propertyId, s3Key, nextOrden, slug);
             if (result.error) throw new Error(result.error);
 
-            const newImage: EditableImage = {
-              id: result.id!,
-              s3_key: s3Key,
-              url: previewUrl,
-              orden: nextOrden,
-            };
-
-            setImages((prev) => [...prev, newImage]);
+            setImages((prev) => [
+              ...prev,
+              { id: result.id!, s3_key: s3Key, url: watermarkedUrl, orden: nextOrden },
+            ]);
             setUploadingImages((prev) => prev.filter((u) => u.uid !== uid));
           } catch (err) {
             setUploadingImages((prev) =>
