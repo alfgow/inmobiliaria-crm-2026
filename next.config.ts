@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "inmuebles-alfgow.s3.mx-central-1.amazonaws.com",
+        pathname: "/**",
       },
     ],
   },
