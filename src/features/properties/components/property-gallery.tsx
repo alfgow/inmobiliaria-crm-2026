@@ -36,6 +36,7 @@ export function PropertyGallery({ images, title }: Props) {
             fill
             priority={active === 0}
             sizes="(max-width: 1280px) 100vw, 1280px"
+            unoptimized
             className="object-cover transition-opacity duration-300"
           />
         ) : (
@@ -90,7 +91,14 @@ export function PropertyGallery({ images, title }: Props) {
                   : "border-transparent opacity-55 hover:opacity-85",
               ].join(" ")}
             >
-              <Image src={url} alt={`Miniatura ${i + 1}`} fill sizes="96px" className="object-cover" />
+              <Image
+                src={url}
+                alt={`Miniatura ${i + 1}`}
+                fill
+                sizes="96px"
+                unoptimized
+                className="object-cover"
+              />
             </button>
           ))}
         </div>
