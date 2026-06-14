@@ -23,7 +23,7 @@ import { PropertyGallery } from "@/features/properties/components/property-galle
 import { PropertyMapClient } from "@/features/properties/components/property-map-client";
 import { StatusBadgeSelect } from "@/features/properties/components/status-badge-select";
 import { prisma } from "@/lib/prisma";
-import { getImageUrl } from "@/lib/s3";
+import { getPublicImageUrl } from "@/lib/s3";
 
 export const dynamic = "force-dynamic";
 
@@ -171,17 +171,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     select: { s3_key: true },
   });
 
-  const imageUrls = (
-    await Promise.all(
-      rawImages.map(async (img) => {
-        try {
-          return await getImageUrl(img.s3_key);
-        } catch {
-          return null;
-        }
-      }),
-    )
-  ).filter(Boolean) as string[];
+  const imageUrls = rawImages.map((img) => getPublicImageUrl(img.s3_key));
 
   // ── Asesor ──────────────────────────────────────────────────────────────────
 

@@ -8,7 +8,7 @@ import {
   type EditableImage,
 } from "@/features/properties/components/property-edit-form";
 import { prisma } from "@/lib/prisma";
-import { getImageUrl } from "@/lib/s3";
+import { getPublicImageUrl } from "@/lib/s3";
 
 export const dynamic = "force-dynamic";
 
@@ -74,23 +74,12 @@ export default async function PropertyEditPage({ params }: PageProps) {
     }),
   ]);
 
-  const images: EditableImage[] = (
-    await Promise.all(
-      rawImages.map(async (img) => {
-        try {
-          const url = await getImageUrl(img.s3_key);
-          return {
-            id: img.id.toString(),
-            s3_key: img.s3_key,
-            url,
-            orden: img.orden ? Number(img.orden) : 0,
-          };
-        } catch {
-          return null;
-        }
-      }),
-    )
-  ).filter(Boolean) as EditableImage[];
+  const images: EditableImage[] = rawImages.map((img) => ({
+    id: img.id.toString(),
+    s3_key: img.s3_key,
+    url: getPublicImageUrl(img.s3_key),
+    orden: img.orden ? Number(img.orden) : 0,
+  }));
 
   function parseJsonbObject(raw: unknown): Record<string, unknown> {
     if (!raw) return {};

@@ -17,7 +17,7 @@ import {
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import { prisma } from "@/lib/prisma";
 import { isDatabaseUnavailableError } from "@/lib/prisma-error";
-import { getImageUrl } from "@/lib/s3";
+import { getPublicImageUrl } from "@/lib/s3";
 
 export const dynamic = "force-dynamic";
 
@@ -176,19 +176,9 @@ export default async function PropertiesPage() {
       }
     }
 
-    // Generate presigned URLs in parallel
-    const urlEntries = await Promise.all(
-      coverImages.map(async (img) => {
-        try {
-          const url = await getImageUrl(img.s3_key);
-          return [img.inmueble_id.toString(), url] as const;
-        } catch {
-          return [img.inmueble_id.toString(), null] as const;
-        }
-      }),
+    const coverImageMap = new Map(
+      coverImages.map((img) => [img.inmueble_id.toString(), getPublicImageUrl(img.s3_key)] as const),
     );
-
-    const coverImageMap = new Map(urlEntries.filter(([, url]) => url !== null) as [string, string][]);
 
     properties = rawProperties.map((p) => ({
       ...p,
