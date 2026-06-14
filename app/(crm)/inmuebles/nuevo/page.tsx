@@ -383,12 +383,15 @@ function PhotoGalleryField({
   const handleDrop = useCallback(
     async (acceptedFiles: File[]) => {
       const nextPhotos = await Promise.all(
-        acceptedFiles.map(async (file) => ({
-          id: crypto.randomUUID(),
-          file: await applyWatermark(file),
-          name: file.name,
-          previewUrl: URL.createObjectURL(file),
-        })),
+        acceptedFiles.map(async (file) => {
+          const watermarkedFile = await applyWatermark(file);
+          return {
+            id: crypto.randomUUID(),
+            file: watermarkedFile,
+            name: file.name,
+            previewUrl: URL.createObjectURL(watermarkedFile),
+          };
+        }),
       );
 
       onChange((current) => [...current, ...nextPhotos]);
