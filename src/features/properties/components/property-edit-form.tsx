@@ -130,6 +130,7 @@ export interface PropertyEditFormProps {
     amenidades: string[];
     requisitos: string[];
     restricciones: string[];
+    tags: string[];
     seo_description: string;
     asesor_id: string;
   };
@@ -542,6 +543,10 @@ export function PropertyEditForm({
   const [restricciones, setRestricciones] = useState<string[]>(
     Array.isArray(initialData.restricciones) ? initialData.restricciones : [],
   );
+  const [tags, setTags] = useState<string[]>(
+    Array.isArray(initialData.tags) ? initialData.tags : [],
+  );
+  const [tagDraft, setTagDraft] = useState("");
   const [reqDraft, setReqDraft] = useState("");
   const [restrDraft, setRestrDraft] = useState("");
 
@@ -608,6 +613,7 @@ export function PropertyEditForm({
       amenidades,
       requisitos,
       restricciones,
+      tags,
       seo_description: seoDescription || null,
       asesor_id: asesorId ? parseFloat(asesorId) : null,
     };
@@ -1022,6 +1028,43 @@ export function PropertyEditForm({
           </div>
         </SectionCard>
 
+        {/* Tags */}
+        <SectionCard>
+          <SectionLabel>Tags</SectionLabel>
+          <div className="flex flex-col gap-3">
+            <AddItemRow
+              value={tagDraft}
+              onChange={setTagDraft}
+              onAdd={() => addUnique(tagDraft, setTags, () => setTagDraft(""))}
+              placeholder="Ej: frente al mar, remodelado, piscina"
+            />
+            {tags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag, i) => (
+                  <span
+                    key={`${tag}-${i}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-brand-secondary/20 bg-brand-secondary/8 px-3 py-1 text-xs font-medium text-brand-secondary"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => setTags((cur) => cur.filter((_, j) => j !== i))}
+                      className="text-brand-secondary/50 transition hover:text-rose-500"
+                      aria-label={`Eliminar tag "${tag}"`}
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-xl border border-dashed border-border-soft px-4 py-3 text-sm text-brand-text/40">
+                Sin tags
+              </p>
+            )}
+          </div>
+        </SectionCard>
+
         {/* Publicación */}
         <SectionCard>
           <SectionLabel>Publicación</SectionLabel>
@@ -1216,6 +1259,10 @@ export function PropertyEditForm({
             <div className="flex items-center justify-between gap-2">
               <span className="text-brand-text/55">Amenidades</span>
               <span className="font-semibold tabular-nums text-brand-text">{amenidades.length}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-brand-text/55">Tags</span>
+              <span className="font-semibold tabular-nums text-brand-text">{tags.length}</span>
             </div>
           </div>
         </div>

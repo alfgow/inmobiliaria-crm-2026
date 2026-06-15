@@ -42,6 +42,7 @@ export default async function PropertyEditPage({ params }: PageProps) {
         longitud: true,
         destacado: true,
         amenidades: true,
+        tags: true,
         video_url: true,
         tour_virtual_url: true,
         requisitos_restricciones: true,
@@ -107,18 +108,18 @@ export default async function PropertyEditPage({ params }: PageProps) {
   const requisitosList = toDisplayArray(reqObj.requisitos);
   const restriccionesList = toDisplayArray(reqObj.restricciones);
 
-  let amenidades: string[] = [];
-  if (property.amenidades) {
+  function parseStringArray(raw: string | null): string[] {
+    if (!raw) return [];
     try {
-      const parsed = JSON.parse(property.amenidades);
-      amenidades = Array.isArray(parsed) ? parsed : [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
-      amenidades = property.amenidades
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+      return raw.split(",").map((s) => s.trim()).filter(Boolean);
     }
   }
+
+  const amenidades = parseStringArray(property.amenidades);
+  const tags = parseStringArray(property.tags ?? null);
 
   const initialData = {
     titulo: property.titulo,
@@ -154,6 +155,7 @@ export default async function PropertyEditPage({ params }: PageProps) {
     video_url: property.video_url ?? "",
     tour_virtual_url: property.tour_virtual_url ?? "",
     amenidades,
+    tags,
     requisitos: requisitosList,
     restricciones: restriccionesList,
     seo_description: property.seo_description ?? "",

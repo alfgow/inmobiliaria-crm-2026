@@ -75,13 +75,13 @@ export default async function ReginaContextosPage() {
               <div className="flex flex-wrap gap-3">
                 <Link
                   href="/"
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white px-5 text-sm font-medium text-brand-text transition hover:border-brand-secondary hover:text-brand-secondary"
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/15 bg-white/10 px-5 text-sm font-medium text-white/80 backdrop-blur-sm transition hover:bg-white/20 hover:text-white"
                 >
                   Volver al dashboard
                 </Link>
                 <Link
                   href="#tabla"
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-brand-primary px-5 text-sm font-semibold text-brand-text transition hover:brightness-95"
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-brand-secondary px-5 text-sm font-semibold text-white transition hover:brightness-110"
                 >
                   Ir a la tabla
                 </Link>

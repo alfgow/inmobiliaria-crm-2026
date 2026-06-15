@@ -30,6 +30,7 @@ export interface PropertyUpdateData {
   amenidades: string[];
   requisitos: string[];
   restricciones: string[];
+  tags: string[];
   destacado: boolean;
   visible: boolean;
   seo_description: string | null;
@@ -71,6 +72,7 @@ export async function updateProperty(
         video_url: data.video_url,
         tour_virtual_url: data.tour_virtual_url,
         amenidades: JSON.stringify(data.amenidades),
+        tags: JSON.stringify(data.tags),
         requisitos_restricciones: {
           requisitos: data.requisitos,
           restricciones: data.restricciones,
