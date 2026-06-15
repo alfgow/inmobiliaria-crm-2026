@@ -1,7 +1,5 @@
 const WATERMARK_URL = "/MarcaDeAgua_GDE.png";
-const WATERMARK_ALPHA = 0.65;
-const WATERMARK_RATIO = 0.30;
-const WATERMARK_MAX_WIDTH_PX = 400;
+const WATERMARK_ALPHA = 0.50;
 const EXPORT_QUALITY = 0.92;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -31,18 +29,28 @@ export async function applyWatermark(file: File): Promise<File> {
 
     ctx.drawImage(sourceImg, 0, 0);
 
-    const wmWidth = Math.min(sourceImg.naturalWidth * WATERMARK_RATIO, WATERMARK_MAX_WIDTH_PX);
-    const wmHeight = wmWidth * (wmImg.naturalHeight / wmImg.naturalWidth);
-    const padding = Math.round(sourceImg.naturalWidth * 0.025);
-    const x = sourceImg.naturalWidth - wmWidth - padding;
-    const y = sourceImg.naturalHeight - wmHeight - padding;
+    // Scale watermark to cover the full image maintaining aspect ratio (cover strategy)
+    const imgW = sourceImg.naturalWidth;
+    const imgH = sourceImg.naturalHeight;
+    const wmAspect = wmImg.naturalWidth / wmImg.naturalHeight;
+    const imgAspect = imgW / imgH;
+
+    let wmWidth: number;
+    let wmHeight: number;
+    if (wmAspect > imgAspect) {
+      wmWidth = imgW;
+      wmHeight = imgW / wmAspect;
+    } else {
+      wmHeight = imgH;
+      wmWidth = imgH * wmAspect;
+    }
+
+    const x = (imgW - wmWidth) / 2;
+    const y = (imgH - wmHeight) / 2;
 
     ctx.save();
     ctx.globalAlpha = WATERMARK_ALPHA;
     ctx.globalCompositeOperation = "source-over";
-    ctx.shadowColor = "rgba(0, 0, 0, 0.20)";
-    ctx.shadowBlur = Math.max(6, Math.round(sourceImg.naturalWidth * 0.008));
-    ctx.shadowOffsetY = 2;
     ctx.drawImage(wmImg, x, y, wmWidth, wmHeight);
     ctx.restore();
 

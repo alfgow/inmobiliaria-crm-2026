@@ -78,6 +78,8 @@ const amenitiesCatalog = [
 
 const requirementExamples = ["Fiador con inmueble", "Identificación oficial"];
 const restrictionExamples = ["No mascotas", "No estudiantes", "No Airbnb", "No fumar"];
+const PRELOADED_REQUIREMENT =
+  "Comprobantes de Ingresos aceptados: Recibos de nómina timbrados por el SAT, estados de cuenta completos, facturas timbradas ante SAT";
 
 const PRELOADED_SEO_DESCRIPTION = `Villanueva García propone en renta: Hermoso departamento a 5 cuadras del Metro Ermita
 * Para PAREJAS (2 personas adultas)
@@ -596,8 +598,8 @@ export function NewPropertyForm({ statuses, advisors, mapboxToken }: NewProperty
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
 
   // Step 6 – Requisitos
-  const [requirements, setRequirements] = useState<string[]>([]);
-  const [restrictions, setRestrictions] = useState<string[]>([]);
+  const [requirements, setRequirements] = useState<string[]>([PRELOADED_REQUIREMENT]);
+  const [restrictions, setRestrictions] = useState<string[]>(["No niños"]);
   const [reqDraft, setReqDraft] = useState("");
   const [restrDraft, setRestrDraft] = useState("");
 
