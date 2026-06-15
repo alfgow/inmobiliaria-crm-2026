@@ -160,7 +160,7 @@ export default async function PropertiesPage() {
       propertyIds.length > 0
         ? await prisma.inmueble_imagenes.findMany({
             where: { inmueble_id: { in: propertyIds } },
-            orderBy: { orden: "asc" },
+            orderBy: [{ orden: "asc" }, { id: "asc" }],
             select: { inmueble_id: true, s3_key: true },
           })
         : [];

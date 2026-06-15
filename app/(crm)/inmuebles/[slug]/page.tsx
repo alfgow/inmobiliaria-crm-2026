@@ -176,7 +176,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
   const rawImages = await prisma.inmueble_imagenes.findMany({
     where: { inmueble_id: property.id.toString() },
-    orderBy: { orden: "asc" },
+    orderBy: [{ orden: "asc" }, { id: "asc" }],
     select: { s3_key: true },
   });
 

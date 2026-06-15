@@ -61,7 +61,7 @@ export default async function PropertyEditPage({ params }: PageProps) {
   const [rawImages, statuses, advisors] = await Promise.all([
     prisma.inmueble_imagenes.findMany({
       where: { inmueble_id: property.id.toString() as unknown as number },
-      orderBy: { orden: "asc" },
+      orderBy: [{ orden: "asc" }, { id: "asc" }],
       select: { id: true, s3_key: true, orden: true },
     }),
     prisma.inmueble_estatus.findMany({
