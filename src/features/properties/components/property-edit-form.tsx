@@ -460,6 +460,38 @@ function UploadingImageTile({
   );
 }
 
+function AutoGrowTextarea({
+  value,
+  onChange,
+  className,
+  ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "0px";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+
+  return (
+    <textarea
+      {...props}
+      ref={ref}
+      value={value}
+      onChange={onChange}
+      onInput={(e) => {
+        const el = e.currentTarget;
+        el.style.height = "0px";
+        el.style.height = `${el.scrollHeight}px`;
+        props.onInput?.(e);
+      }}
+      className={`${className ?? ""} overflow-hidden`}
+    />
+  );
+}
+
 // ── Main form component ───────────────────────────────────────────────────────
 
 export function PropertyEditForm({
@@ -750,10 +782,9 @@ export function PropertyEditForm({
 
             <div>
               <FieldLabel label="Descripción" />
-              <textarea
+              <AutoGrowTextarea
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
-                rows={4}
                 className={`${inputCls} resize-none`}
                 placeholder="Descripción del inmueble..."
               />
@@ -997,11 +1028,10 @@ export function PropertyEditForm({
           <div className="flex flex-col gap-4">
             <div>
               <FieldLabel label="Descripción SEO" hint={`${seoDescription.length}/160`} />
-              <textarea
+              <AutoGrowTextarea
                 value={seoDescription}
                 onChange={(e) => setSeoDescription(e.target.value)}
                 maxLength={160}
-                rows={3}
                 className={`${inputCls} resize-none`}
                 placeholder="Resumen breve para buscadores y redes sociales."
               />
