@@ -15,6 +15,7 @@ import {
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import { ContactInterestsCard } from "@/features/contacts/components/contact-interests-card";
+import { DeleteContactButton } from "@/features/contacts/components/delete-contact-button";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "../../../generated/prisma/client";
 
@@ -238,6 +239,11 @@ export default async function ContactDetailPage({ params }: PageProps) {
                 <Pencil className="h-4 w-4" />
                 Editar
               </Link>
+
+              <DeleteContactButton
+                contactId={contact.id.toString()}
+                contactName={contact.nombre}
+              />
 
               <div className="hidden rounded-full border border-white/10 bg-zinc-950 px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] text-zinc-300 shadow-2xl sm:block">
                 Vista de contacto
