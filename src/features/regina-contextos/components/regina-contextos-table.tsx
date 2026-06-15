@@ -6,6 +6,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   ArrowUpDown,
+  MessageCircle,
   Search,
 } from "lucide-react";
 import {
@@ -22,6 +23,7 @@ import {
 } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 
+import { ChatHistorialModal } from "@/features/regina-contextos/components/chat-historial-modal";
 import { DeleteReginaContextoButton } from "@/features/regina-contextos/components/delete-regina-contexto-button";
 
 export type ReginaContextoRow = {
@@ -69,22 +71,6 @@ function statusStyle(status: string | null) {
   return "border-border-soft bg-brand-surface text-brand-text/70";
 }
 
-function formatHistorial(value: unknown) {
-  if (value === null || value === undefined) {
-    return "Sin historial";
-  }
-
-  if (Array.isArray(value)) {
-    return `${value.length} evento${value.length === 1 ? "" : "s"}`;
-  }
-
-  if (typeof value === "object") {
-    return `${Object.keys(value as Record<string, unknown>).length} campo${Object.keys(value as Record<string, unknown>).length === 1 ? "" : "s"}`;
-  }
-
-  const text = String(value);
-  return text.length > 72 ? `${text.slice(0, 72)}…` : text;
-}
 
 type Props = {
   data: ReginaContextoRow[];
@@ -93,6 +79,7 @@ type Props = {
 export function ReginaContextosTable({ data }: Props) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedRow, setSelectedRow] = useState<ReginaContextoRow | null>(null);
   const [sorting, setSorting] = useState<SortingState>([
     { id: "updated_at", desc: true },
   ]);
@@ -192,18 +179,17 @@ export function ReginaContextosTable({ data }: Props) {
       {
         accessorKey: "historial",
         header: "Historial",
-        cell: ({ row }) => (
-          <p
-            className="max-w-[20rem] truncate text-sm text-brand-text/65"
-            title={
-              row.original.historial === null || row.original.historial === undefined
-                ? "Sin historial"
-                : JSON.stringify(row.original.historial, null, 2)
-            }
-          >
-            {formatHistorial(row.original.historial)}
-          </p>
-        ),
+        cell: ({ row }) => {
+          const count = Array.isArray(row.original.historial)
+            ? row.original.historial.length
+            : 0;
+          return (
+            <span className="inline-flex items-center gap-1.5 text-sm text-brand-secondary/80">
+              <MessageCircle className="size-3.5 shrink-0" />
+              {count} msg{count !== 1 ? "s" : ""}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "updated_at",
@@ -227,10 +213,13 @@ export function ReginaContextosTable({ data }: Props) {
         id: "actions",
         header: "Acciones",
         cell: ({ row }) => (
-          <DeleteReginaContextoButton
-            waId={row.original.wa_id}
-            label="Eliminar"
-          />
+          // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+          <div onClick={(e) => e.stopPropagation()}>
+            <DeleteReginaContextoButton
+              waId={row.original.wa_id}
+              label="Eliminar"
+            />
+          </div>
         ),
       },
     ],
@@ -386,7 +375,11 @@ export function ReginaContextosTable({ data }: Props) {
             <tbody className="divide-y divide-border-soft bg-white">
               {table.getRowModel().rows.length > 0 ? (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="transition hover:bg-surface-2/50">
+                  <tr
+                    key={row.id}
+                    className="cursor-pointer transition hover:bg-brand-secondary/5"
+                    onClick={() => setSelectedRow(row.original)}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-4 py-4 align-top">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -412,6 +405,13 @@ export function ReginaContextosTable({ data }: Props) {
           </table>
         </div>
       </div>
+
+      {selectedRow && (
+        <ChatHistorialModal
+          row={selectedRow}
+          onClose={() => setSelectedRow(null)}
+        />
+      )}
 
       <div className="mt-5 flex flex-col gap-4 border-t border-border-soft pt-4 lg:flex-row lg:items-center lg:justify-between">
         <p className="text-sm text-brand-text/60">
