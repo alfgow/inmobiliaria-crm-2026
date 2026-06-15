@@ -27,13 +27,9 @@ export async function getUploadUrl(
 
 export async function uploadObject(
   s3Key: string,
-  body: BodyInit | undefined,
+  body: Uint8Array<ArrayBufferLike> | Buffer,
   contentType: string,
 ): Promise<void> {
-  if (!body) {
-    throw new Error("Missing upload body");
-  }
-
   await s3.send(
     new PutObjectCommand({
       Bucket: BUCKET,
