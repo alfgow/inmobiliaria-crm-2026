@@ -79,6 +79,45 @@ const amenitiesCatalog = [
 const requirementExamples = ["Fiador con inmueble", "Identificación oficial"];
 const restrictionExamples = ["No mascotas", "No estudiantes", "No Airbnb", "No fumar"];
 
+const PRELOADED_SEO_DESCRIPTION = `Villanueva García propone en renta: Hermoso departamento a 5 cuadras del Metro Ermita
+* Para PAREJAS (2 personas adultas)
+
+Cuenta con:
+
+* 1 cajón de estacionamiento en línea de 3 autos
+
+* 1er piso SIN elevador
+
+* 2 habitaciones chicas con closet
+
+* 1 cocina integral
+
+* 1 baño completo
+
+* Área de Sala - Comedor.
+
+** REQUISITOS**
+
+IMPORTANTE: Cubrir por favor requisitos y restricciones al 100% ESPECÍFICADOS EN LA PUBLICACIÓN, PARA PODER AGENDAR CITA; ya que no son NEGOCIABLES.
+
+* Comprobar ingresos mínimos MENSUALES de $33,000 (Individual o mancomunado y aceptamos recibos de nómina, estados de cuenta completos o facturas)
+
+* Pago Póliza Jurídica Costo $4,300 ( ANUAL)
+
+* 1 Mes de depósito en garantía
+
+* 1 Mes de renta corriente.
+
+NO aceptamos: (NO NEGOCIABLES POR INSTRUCCION DE ARRENDADOR)
+
+* Niños: No se aceptan
+
+* Mascotas: No se aceptan
+
+* Estudiantes que no vayan a vivir con padre o tutor
+
+* Roomies (Personas que estén cambiando frecuentemente)`;
+
 const steps = [
   { label: "Operación",        description: "¿Cuál es el tipo de operación del inmueble?" },
   { label: "General",          description: "Nombre comercial, tipo de inmueble y precio." },
@@ -207,6 +246,38 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 function Sep() { return <hr className="border-slate-100" />; }
+
+function AutoGrowTextarea({
+  value,
+  onChange,
+  className,
+  ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "0px";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+
+  return (
+    <textarea
+      {...props}
+      ref={ref}
+      value={value}
+      onChange={onChange}
+      onInput={(e) => {
+        const el = e.currentTarget;
+        el.style.height = "0px";
+        el.style.height = `${el.scrollHeight}px`;
+        props.onInput?.(e);
+      }}
+      className={`${textareaBase} ${className ?? ""} overflow-hidden`}
+    />
+  );
+}
 
 function NotebookMoneyField({ label, value, onChange, disabled }: {
   label: string; value: string; onChange: (v: string) => void; disabled?: boolean;
@@ -531,7 +602,7 @@ export function NewPropertyForm({ statuses, advisors, mapboxToken }: NewProperty
   const [restrDraft, setRestrDraft] = useState("");
 
   // Step 7 – Publicación
-  const [seoDesc, setSeoDesc] = useState("");
+  const [seoDesc, setSeoDesc] = useState(PRELOADED_SEO_DESCRIPTION);
   const [featured, setFeatured] = useState(false);
   const [visible, setVisible] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
@@ -675,18 +746,14 @@ export function NewPropertyForm({ statuses, advisors, mapboxToken }: NewProperty
         const ext = photo.name.split(".").pop()?.toLowerCase() ?? "jpg";
         const s3Key = `inmuebles/${propertyId}/${uid}.${ext}`;
 
-        const presignRes = await fetch("/api/upload/presign", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key: s3Key, contentType: photo.file.type }),
-        });
-        if (!presignRes.ok) throw new Error(`Error al preparar la subida de imagen ${i + 1}`);
-        const { url: uploadUrl } = (await presignRes.json()) as { url: string };
+        const uploadForm = new FormData();
+        uploadForm.append("key", s3Key);
+        uploadForm.append("contentType", photo.file.type);
+        uploadForm.append("file", photo.file);
 
-        const uploadRes = await fetch(uploadUrl, {
-          method: "PUT",
-          body: photo.file,
-          headers: { "Content-Type": photo.file.type },
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadForm,
         });
         if (!uploadRes.ok) throw new Error(`Error al subir imagen ${i + 1}`);
 
@@ -952,10 +1019,10 @@ export function NewPropertyForm({ statuses, advisors, mapboxToken }: NewProperty
             {/* 7 · Publicación */}
             {step === 7 && (
               <Pad>
-                <Field label="SEO description" hint={`${seoDesc.length}/160`}>
-                  <textarea value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} maxLength={200}
+                <Field label="SEO description" hint={`${seoDesc.length} caracteres`}>
+                  <AutoGrowTextarea value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)}
                     placeholder="Resumen breve y persuasivo para snippets y redes sociales."
-                    className={`${textareaBase} min-h-[84px]`} />
+                    className="min-h-[84px]" />
                 </Field>
                 <Sep />
                 <Row>

@@ -25,6 +25,25 @@ export async function getUploadUrl(
   return getSignedUrl(s3, command, { expiresIn });
 }
 
+export async function uploadObject(
+  s3Key: string,
+  body: BodyInit | undefined,
+  contentType: string,
+): Promise<void> {
+  if (!body) {
+    throw new Error("Missing upload body");
+  }
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: s3Key,
+      Body: body,
+      ContentType: contentType,
+    }),
+  );
+}
+
 export async function deleteObject(s3Key: string): Promise<void> {
   await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: s3Key }));
 }

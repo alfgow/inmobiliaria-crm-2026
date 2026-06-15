@@ -665,18 +665,14 @@ export function PropertyEditForm({
               prev.map((u) => u.uid === uid ? { ...u, previewUrl: watermarkedUrl } : u),
             );
 
-            const presignRes = await fetch("/api/upload/presign", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ key: s3Key, contentType: watermarkedFile.type }),
-            });
-            if (!presignRes.ok) throw new Error("Presign failed");
-            const { url: uploadUrl } = (await presignRes.json()) as { url: string };
+            const uploadForm = new FormData();
+            uploadForm.append("key", s3Key);
+            uploadForm.append("contentType", watermarkedFile.type);
+            uploadForm.append("file", watermarkedFile);
 
-            const uploadRes = await fetch(uploadUrl, {
-              method: "PUT",
-              body: watermarkedFile,
-              headers: { "Content-Type": watermarkedFile.type },
+            const uploadRes = await fetch("/api/upload", {
+              method: "POST",
+              body: uploadForm,
             });
             if (!uploadRes.ok) throw new Error("Upload failed");
 
