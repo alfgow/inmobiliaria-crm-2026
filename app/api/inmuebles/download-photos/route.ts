@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
   const safeName = property.titulo.replace(/[^a-z0-9]/gi, "-").toLowerCase().slice(0, 60);
   const filename = `fotos-${safeName}.zip`;
 
-  return new NextResponse(zipBuffer, {
+  return new NextResponse(new Uint8Array(zipBuffer), {
     status: 200,
     headers: {
       "Content-Type": "application/zip",

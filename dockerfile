@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json* ./
 
-RUN npm install --omit=dev
+RUN npm ci
 
 
 # Etapa 2: build
@@ -20,6 +20,7 @@ COPY . .
 
 RUN npx prisma generate || true
 RUN npm run build
+RUN npm prune --omit=dev
 
 
 # Etapa 3: producción
