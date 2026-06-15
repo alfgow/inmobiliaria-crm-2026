@@ -61,6 +61,7 @@ export interface AdvisorOption {
 export interface NewPropertyFormProps {
   statuses: StatusOption[];
   advisors: AdvisorOption[];
+  mapboxToken: string;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -481,7 +482,7 @@ function AddRow({ value, onChange, onKeyDown, onAdd, placeholder }: {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function NewPropertyForm({ statuses, advisors }: NewPropertyFormProps) {
+export function NewPropertyForm({ statuses, advisors, mapboxToken }: NewPropertyFormProps) {
   const router = useRouter();
 
   // Wizard
@@ -814,7 +815,13 @@ export function NewPropertyForm({ statuses, advisors }: NewPropertyFormProps) {
             )}
 
             {/* 2 · Ubicación */}
-            {step === 2 && <LocationSection value={locationValue} onChange={setLocationValue} />}
+            {step === 2 && (
+              <LocationSection
+                value={locationValue}
+                onChange={setLocationValue}
+                mapboxToken={mapboxToken}
+              />
+            )}
 
             {/* 3 · Características */}
             {step === 3 && (

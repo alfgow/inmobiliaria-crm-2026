@@ -148,9 +148,11 @@ function AutocompleteField({
 export function LocationSection({
   value,
   onChange,
+  mapboxToken,
 }: {
   value: LocationValue;
   onChange: (v: LocationValue) => void;
+  mapboxToken: string;
 }) {
   const [coloniaSuggs, setColoniaSuggs] = useState<ColoniaRow[]>([]);
   const [cpSuggs, setCpSuggs] = useState<ColoniaRow[]>([]);
@@ -253,7 +255,7 @@ export function LocationSection({
       const parts = [address, colonia, municipio, estado].filter(Boolean);
       if (parts.length < 2) return;
 
-      const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      const token = mapboxToken.trim();
       if (!token) return;
 
       setGeocoding(true);
@@ -283,7 +285,7 @@ export function LocationSection({
     return () => {
       if (geocodeTimer.current) clearTimeout(geocodeTimer.current);
     };
-  }, [value.address, value.colonia, value.municipio, value.estado]);
+  }, [mapboxToken, value.address, value.colonia, value.municipio, value.estado]);
 
   // ── Pin drag ────────────────────────────────────────────────────────────────
 
@@ -375,6 +377,7 @@ export function LocationSection({
           lng={parsedLng}
           geocoding={geocoding}
           onPinMove={handlePinMove}
+          mapboxToken={mapboxToken}
         />
       </div>
 

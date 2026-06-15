@@ -19,10 +19,11 @@ export default async function NuevoInmueblePage() {
     id: a.id.toString(),
     nombre: a.nombre,
   }));
+  const mapboxToken = process.env.MAPBOX_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <NewPropertyForm statuses={statuses} advisors={advisors} />
+      <NewPropertyForm statuses={statuses} advisors={advisors} mapboxToken={mapboxToken} />
     </div>
   );
 }

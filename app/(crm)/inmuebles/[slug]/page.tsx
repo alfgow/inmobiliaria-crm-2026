@@ -165,6 +165,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
   if (!property) notFound();
 
+  const mapboxToken = process.env.MAPBOX_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+
   const tipo = rawTipoOp[0]?.tipo ?? "";
   const operacion = rawTipoOp[0]?.operacion ?? "";
   const interestCount = Number(interestCountResult[0]?.count ?? 0);
@@ -455,7 +457,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                       </p>
                     )}
                   </div>
-                  <PropertyMapClient lat={lat} lng={lng} />
+                  <PropertyMapClient lat={lat} lng={lng} mapboxToken={mapboxToken} />
                 </section>
               )}
 

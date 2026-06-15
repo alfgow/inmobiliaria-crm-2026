@@ -18,8 +18,9 @@ const PropertyMap = loadDynamic(
 type Props = {
   lat: number | null;
   lng: number | null;
+  mapboxToken: string;
 };
 
-export function PropertyMapClient({ lat, lng }: Props) {
-  return <PropertyMap lat={lat} lng={lng} readonly />;
+export function PropertyMapClient({ lat, lng, mapboxToken }: Props) {
+  return <PropertyMap lat={lat} lng={lng} readonly mapboxToken={mapboxToken} />;
 }

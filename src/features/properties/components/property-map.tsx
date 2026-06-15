@@ -10,6 +10,7 @@ type Props = {
   geocoding?: boolean;
   onPinMove?: (lat: number, lng: number) => void;
   readonly?: boolean;
+  mapboxToken: string;
 };
 
 const CDMX: [number, number] = [-99.1332, 19.4326];
@@ -18,11 +19,19 @@ function isFiniteCoordinate(value: number | null): value is number {
   return value !== null && Number.isFinite(value);
 }
 
-export function PropertyMap({ lat, lng, geocoding, onPinMove, readonly = false }: Props) {
+export function PropertyMap({
+  lat,
+  lng,
+  geocoding,
+  onPinMove,
+  readonly = false,
+  mapboxToken,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapboxMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const onPinMoveRef = useRef(onPinMove);
+  const token = mapboxToken.trim();
 
   useEffect(() => {
     onPinMoveRef.current = onPinMove;
@@ -30,6 +39,7 @@ export function PropertyMap({ lat, lng, geocoding, onPinMove, readonly = false }
 
   useEffect(() => {
     if (!containerRef.current) return;
+    if (!token) return;
 
     const center: [number, number] =
       isFiniteCoordinate(lat) && isFiniteCoordinate(lng) ? [lng, lat] : CDMX;
@@ -40,7 +50,7 @@ export function PropertyMap({ lat, lng, geocoding, onPinMove, readonly = false }
       const mapboxgl = (await import("mapbox-gl")).default;
       if (cancelled || !containerRef.current) return;
 
-      mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+      mapboxgl.accessToken = token;
 
       const map = new mapboxgl.Map({
         container: containerRef.current,
@@ -76,7 +86,7 @@ export function PropertyMap({ lat, lng, geocoding, onPinMove, readonly = false }
       mapRef.current = null;
       markerRef.current = null;
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lat, lng, readonly, token]);
 
   useEffect(() => {
     if (!markerRef.current || !isFiniteCoordinate(lat) || !isFiniteCoordinate(lng)) return;
@@ -98,6 +108,19 @@ export function PropertyMap({ lat, lng, geocoding, onPinMove, readonly = false }
       {!readonly && (
         <div className="absolute bottom-10 left-3 rounded-lg bg-white/90 px-2.5 py-1.5 text-[10px] text-slate-500 shadow-sm backdrop-blur-sm">
           Arrastra el pin para ajustar la posición exacta
+        </div>
+      )}
+
+      {!token && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 px-6 text-center backdrop-blur-sm">
+          <div className="max-w-sm rounded-xl border border-slate-200 bg-white/95 px-6 py-5 shadow-lg">
+            <p className="text-sm font-medium text-slate-700">
+              Falta configurar el token de Mapbox.
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Define <code>NEXT_PUBLIC_MAPBOX_TOKEN</code> en <code>.env.local</code> para desarrollo o en <code>.env</code> para producción.
+            </p>
+          </div>
         </div>
       )}
     </div>
