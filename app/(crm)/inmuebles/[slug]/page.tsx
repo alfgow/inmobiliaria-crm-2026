@@ -19,6 +19,7 @@ import {
 import type { ReactNode } from "react";
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
+import { DeletePropertyButton } from "@/features/properties/components/delete-property-button";
 import { PropertyGallery } from "@/features/properties/components/property-gallery";
 import { PropertyMapClient } from "@/features/properties/components/property-map-client";
 import { StatusBadgeSelect } from "@/features/properties/components/status-badge-select";
@@ -541,6 +542,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                     <ImageIcon className="size-4" />
                     Gestionar fotos
                   </Link>
+                  <DeletePropertyButton slug={property.slug} title={property.titulo} />
                 </div>
               </SectionCard>
 

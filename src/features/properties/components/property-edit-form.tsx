@@ -38,6 +38,7 @@ import {
   deletePropertyImage,
   reorderPropertyImages,
 } from "@/features/properties/actions/manage-images";
+import { DeletePropertyButton } from "@/features/properties/components/delete-property-button";
 import { applyWatermark } from "@/lib/watermark";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -1146,6 +1147,10 @@ export function PropertyEditForm({
               {saveError}
             </p>
           )}
+
+          <div className="mt-3 border-t border-border-soft pt-3">
+            <DeletePropertyButton slug={slug} title={titulo} />
+          </div>
         </div>
 
         {/* Navigation */}
