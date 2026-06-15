@@ -100,6 +100,16 @@ model error_logs {
   @@index([user_id], map: "idx_19311_error_logs_user_id_foreign")
 }
 
+model regina_contextos {
+  wa_id        String   @id @db.Text
+  nombre       String?
+  inmueble_id  Int?
+  status       String?
+  rechazos_post Int?
+  historial    Json?
+  updated_at   DateTime? @db.Timestamp(6)
+}
+
 model inmueble_estatus {
   id          Int         @id(map: "idx_19352_primary") @default(autoincrement())
   nombre      String      @unique(map: "idx_19352_nombre") @db.VarChar(50)

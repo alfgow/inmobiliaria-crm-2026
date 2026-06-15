@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Database,
   Compass,
   LayoutDashboard,
   MessageCircle,
@@ -20,6 +21,7 @@ const navigationItems = [
   { href: "/contactos", label: "Contactos", icon: Users },
   { href: "/mapa", label: "Mapa", icon: BarChart3 },
   { href: "/blog", label: "Blog", icon: MessageCircle },
+  { href: "/regina-contextos", label: "Regina", icon: Database },
   { href: "/configuracion", label: "Ajustes", icon: Settings2 },
 ];
 

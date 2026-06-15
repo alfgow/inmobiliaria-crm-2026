@@ -21,6 +21,11 @@ const shortcuts = [
     description: "Cruzar oportunidades por ubicación.",
     href: "/mapa",
   },
+  {
+    title: "Regina contextos",
+    description: "Revisar y depurar contextos almacenados.",
+    href: "/regina-contextos",
+  },
 ];
 
 export function DashboardShell() {

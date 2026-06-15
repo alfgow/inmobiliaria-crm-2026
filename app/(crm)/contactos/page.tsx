@@ -184,7 +184,7 @@ export default async function ContactsPage({ searchParams }: PageProps) {
                 </div>
                 <p className="text-base font-medium text-brand-text/60">
                   Sin resultados para&nbsp;
-                  <span className="font-semibold text-brand-text">"{query}"</span>
+                  <span className="font-semibold text-brand-text">&quot;{query}&quot;</span>
                 </p>
                 <p className="max-w-xs text-sm text-brand-text/40">
                   Intenta con el nombre completo, número de teléfono o correo exacto.
