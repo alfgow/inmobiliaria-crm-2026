@@ -41,12 +41,20 @@ function formatWhatsAppUrl(phone: string): string {
 }
 
 function getInitials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
+  const words = name.split(/\s+/).filter(Boolean);
+  const initials: string[] = [];
+  
+  for (const word of words) {
+    const letterMatch = word.match(/\p{L}/u);
+    if (letterMatch) {
+      initials.push(letterMatch[0].toUpperCase());
+    }
+    if (initials.length >= 2) {
+      break;
+    }
+  }
+  
+  return initials.join("") || "?";
 }
 
 type PageProps = {
@@ -226,7 +234,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
     timeline[0]?.createdAt ?? contact.updated_at ?? contact.created_at;
 
   return (
-    <main className="relative isolate min-h-[100dvh] bg-slate-50 px-4 py-6 pb-40 text-zinc-950 sm:px-6 sm:pb-32 lg:px-10 lg:pb-6">
+    <main className="relative isolate min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-slate-50 px-4 py-6 pb-40 text-zinc-950 sm:px-6 sm:pb-32 lg:px-10 lg:pb-6">
       <AnimatedDashboardBackground>
         <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
           <div className="flex flex-wrap items-center justify-between gap-3 gap-y-3">
@@ -252,7 +260,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                 contactName={contact.nombre}
               />
 
-              <div className="hidden rounded-full border border-white/10 bg-zinc-950 px-4 py-2 text-xs font-medium uppercase tracking-[0.3em] text-zinc-300 shadow-2xl sm:block">
+              <div className="hidden rounded-full border border-white/10 bg-zinc-950 px-4 py-2 text-xs font-medium uppercase tracking-[0.15em] sm:tracking-[0.3em] text-zinc-300 shadow-2xl sm:block">
                 Vista de contacto
               </div>
             </div>
@@ -270,7 +278,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                   </div>
 
                   <div className="min-w-0">
-                    <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-400">
+                    <p className="text-sm font-medium uppercase tracking-[0.15em] sm:tracking-[0.3em] text-zinc-400">
                       Contacto
                     </p>
                     <h1 className="mt-1 break-words text-3xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
@@ -303,7 +311,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-zinc-400">
+                    <p className="text-xs uppercase tracking-[0.15em] sm:tracking-[0.3em] text-zinc-400">
                       Estado actual
                     </p>
                     <p className="mt-1 text-lg font-semibold text-white">
@@ -329,7 +337,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                         item.span ? "col-span-2" : ""
                       }`}
                     >
-                      <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-400">
+                      <p className="text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.28em] text-zinc-400">
                         {item.label}
                       </p>
                       <p className="mt-1 text-sm font-medium text-white">
@@ -349,7 +357,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                   <UserRound className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
+                  <p className="text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.35em] text-slate-500">
                     Información
                   </p>
                   <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
@@ -386,7 +394,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                       <item.icon className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                      <p className="text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.3em] text-slate-500">
                         {item.label}
                       </p>
                       <p className="mt-1 break-words text-base font-medium text-slate-950">
@@ -453,7 +461,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                 <MessageSquareText className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
+                <p className="text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.35em] text-slate-500">
                   Interacciones
                 </p>
                 <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">

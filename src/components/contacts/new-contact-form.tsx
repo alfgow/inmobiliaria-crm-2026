@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+
+import { createContact } from "@/features/contacts/actions/createContact";
 
 type ActiveProperty = {
   id: string;
@@ -42,6 +45,8 @@ export function NewContactForm({
   initialPhone,
   activeProperties,
 }: NewContactFormProps) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [formState, setFormState] = useState<FormState>({
     nombre: "",
     telefono: initialPhone,
@@ -55,9 +60,31 @@ export function NewContactForm({
     [activeProperties, formState.inmuebleId],
   );
 
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    startTransition(async () => {
+      const result = await createContact(
+        formState.nombre,
+        formState.telefono,
+        formState.email,
+        formState.inmuebleId,
+        formState.comentarios,
+      );
+
+      if (!result.success) {
+        setError(result.error);
+      }
+    });
+  }
+
   return (
     <section className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-      <form className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8"
+      >
         <div>
           <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
             Información básica
@@ -74,15 +101,13 @@ export function NewContactForm({
               type="text"
               name="nombre"
               required
+              disabled={isPending}
               value={formState.nombre}
-              onChange={(event) =>
-                setFormState((current) => ({
-                  ...current,
-                  nombre: event.target.value,
-                }))
+              onChange={(e) =>
+                setFormState((prev) => ({ ...prev, nombre: e.target.value }))
               }
               placeholder="Nombre completo"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 disabled:opacity-60"
             />
           </label>
 
@@ -92,15 +117,13 @@ export function NewContactForm({
               type="tel"
               name="telefono"
               required
+              disabled={isPending}
               value={formState.telefono}
-              onChange={(event) =>
-                setFormState((current) => ({
-                  ...current,
-                  telefono: event.target.value,
-                }))
+              onChange={(e) =>
+                setFormState((prev) => ({ ...prev, telefono: e.target.value }))
               }
               placeholder="Número de teléfono"
-              className="w-full rounded-2xl border border-sky-300 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+              className="w-full rounded-2xl border border-sky-300 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 disabled:opacity-60"
             />
           </label>
 
@@ -111,15 +134,13 @@ export function NewContactForm({
             <input
               type="email"
               name="email"
+              disabled={isPending}
               value={formState.email}
-              onChange={(event) =>
-                setFormState((current) => ({
-                  ...current,
-                  email: event.target.value,
-                }))
+              onChange={(e) =>
+                setFormState((prev) => ({ ...prev, email: e.target.value }))
               }
               placeholder="correo@dominio.com"
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 disabled:opacity-60"
             />
           </label>
 
@@ -129,15 +150,13 @@ export function NewContactForm({
             </span>
             <select
               name="inmueble_id"
-              value={formState.inmuebleId}
-              onChange={(event) =>
-                setFormState((current) => ({
-                  ...current,
-                  inmuebleId: event.target.value,
-                }))
-              }
-              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
               required
+              disabled={isPending}
+              value={formState.inmuebleId}
+              onChange={(e) =>
+                setFormState((prev) => ({ ...prev, inmuebleId: e.target.value }))
+              }
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 disabled:opacity-60"
             >
               <option value="" disabled>
                 Selecciona una propiedad activa
@@ -157,24 +176,30 @@ export function NewContactForm({
             <textarea
               name="comentarios"
               rows={5}
+              disabled={isPending}
               value={formState.comentarios}
-              onChange={(event) =>
-                setFormState((current) => ({
-                  ...current,
-                  comentarios: event.target.value,
-                }))
+              onChange={(e) =>
+                setFormState((prev) => ({ ...prev, comentarios: e.target.value }))
               }
               placeholder="Agrega contexto del contacto, presupuesto, zona, tiempos o cualquier detalle útil."
-              className="w-full rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+              className="w-full rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 disabled:opacity-60"
             />
           </label>
+
+          {error && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              {error}
+            </div>
+          )}
 
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <button
               type="submit"
-              className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 font-semibold text-white shadow-[0_12px_30px_rgba(16,185,129,0.22)] transition hover:bg-emerald-700"
+              disabled={isPending}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-semibold text-white shadow-[0_12px_30px_rgba(16,185,129,0.22)] transition hover:bg-emerald-700 disabled:pointer-events-none disabled:opacity-60"
             >
-              Guardar contacto
+              {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isPending ? "Guardando..." : "Guardar contacto"}
             </button>
             <Link
               href="/contactos"
@@ -187,7 +212,7 @@ export function NewContactForm({
       </form>
 
       <aside className="space-y-6">
-        <div className="hidden rounded-[2rem] border border-violet-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(245,243,255,0.96)_100%)] p-6 shadow-[0_28px_70px_rgba(91,33,182,0.08)] lg:block sm:p-8">
+        <div className="hidden rounded-[2rem] border border-violet-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(245,243,255,0.96)_100%)] p-6 shadow-[0_28px_70px_rgba(91,33,182,0.08)] sm:p-8 lg:block">
           <p className="text-[10px] uppercase tracking-[0.35em] text-violet-500">
             Resumen
           </p>

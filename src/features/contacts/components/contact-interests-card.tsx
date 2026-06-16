@@ -112,7 +112,7 @@ export function ContactInterestsCard({
           <Building2 className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
+          <p className="text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.35em] text-slate-500">
             Intereses
           </p>
           <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
@@ -191,12 +191,12 @@ export function ContactInterestsCard({
                     {(showTipo || showOperacion) && (
                       <div className="flex flex-wrap items-center gap-2">
                         {showTipo && (
-                          <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-sky-700">
+                          <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.3em] text-sky-700">
                             {tipo}
                           </span>
                         )}
                         {showOperacion && (
-                          <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-violet-700">
+                          <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.3em] text-violet-700">
                             {operacion}
                           </span>
                         )}
@@ -208,7 +208,7 @@ export function ContactInterestsCard({
 
                   {/* Price — full width */}
                   <div className="mt-4 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                    <p className="text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.3em] text-slate-500">
                       Precio
                     </p>
                     <p className="mt-1 text-lg font-semibold text-slate-950">
@@ -219,13 +219,13 @@ export function ContactInterestsCard({
                   {/* Stats grid — 2 cols on mobile, 3 on sm */}
                   <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                      <p className="text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.3em] text-slate-500">
                         Estatus
                       </p>
                       <p className="mt-1 text-sm font-medium text-slate-950">{estatus}</p>
                     </div>
                     <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                      <p className="text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.3em] text-slate-500">
                         Metros
                       </p>
                       <p className="mt-1 text-sm font-medium text-slate-950">
@@ -233,7 +233,7 @@ export function ContactInterestsCard({
                       </p>
                     </div>
                     <div className="col-span-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 sm:col-span-1">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
+                      <p className="text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.3em] text-slate-500">
                         Interés registrado
                       </p>
                       <p className="mt-1 text-sm font-medium text-slate-950">
