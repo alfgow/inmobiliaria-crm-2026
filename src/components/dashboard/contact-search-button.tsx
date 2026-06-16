@@ -44,12 +44,15 @@ function formatDate(value: string | null) {
 
 function ContactResultCard({
   contact,
+  onClose,
 }: {
   contact: ContactSearchResponse["results"][number];
+  onClose: () => void;
 }) {
   return (
     <Link
       href={`/contactos/${contact.id}`}
+      onClick={onClose}
       className="group block rounded-2xl border border-border-soft bg-white px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-secondary/20 hover:shadow-[0_18px_40px_rgba(44,44,44,0.08)]"
     >
       <div className="flex items-start justify-between gap-4">
@@ -238,7 +241,7 @@ function ContactSearchModal({
             ) : null}
 
             {results.map((contact) => (
-              <ContactResultCard key={contact.id} contact={contact} />
+              <ContactResultCard key={contact.id} contact={contact} onClose={onClose} />
             ))}
 
             {state === "empty" ? (
@@ -246,6 +249,7 @@ function ContactSearchModal({
                 <p>No encontramos coincidencias.</p>
                 <Link
                   href={`/contactos/nuevo?telefono=${encodeURIComponent(query.trim())}`}
+                  onClick={onClose}
                   className="mt-4 inline-flex rounded-2xl bg-brand-primary px-4 py-2 font-semibold text-[#2c2c2c] transition hover:brightness-95"
                 >
                   Registrar nuevo contacto

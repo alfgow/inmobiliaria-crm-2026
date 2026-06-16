@@ -1,17 +1,17 @@
+import {
+    ArrowLeft,
+    Bot,
+    CalendarDays,
+    Clock3,
+    Mail,
+    MessageSquareText,
+    Pencil,
+    Phone,
+    Sparkles,
+    UserRound,
+} from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  ArrowLeft,
-  Bot,
-  CalendarDays,
-  Clock3,
-  Mail,
-  MessageSquareText,
-  Pencil,
-  Phone,
-  Sparkles,
-  UserRound,
-} from "lucide-react";
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import { AddCommentButton } from "@/features/contacts/components/add-comment-button";
@@ -350,8 +350,8 @@ export default async function ContactDetailPage({ params }: PageProps) {
             </div>
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
+         
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8 mb-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
                   <UserRound className="h-5 w-5" />
@@ -453,7 +453,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                 direccion: p.direccion,
               }))}
             />
-          </section>
+       
 
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
             <div className="flex items-center gap-3">
