@@ -339,14 +339,14 @@ export default async function ContactDetailPage({ params }: PageProps) {
           <section className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
             <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
                   <UserRound className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
                     Información
                   </p>
-                  <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
+                  <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
                     Datos del contacto
                   </h2>
                 </div>
@@ -425,14 +425,14 @@ export default async function ContactDetailPage({ params }: PageProps) {
 
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-600 text-white">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-600 text-white">
                 <MessageSquareText className="h-5 w-5" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
                   Interacciones
                 </p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
+                <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
                   Historial de conversación
                 </h2>
               </div>

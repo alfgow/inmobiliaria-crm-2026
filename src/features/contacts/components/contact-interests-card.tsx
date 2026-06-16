@@ -111,11 +111,11 @@ export function ContactInterestsCard({
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-600 text-white">
           <Building2 className="h-5 w-5" />
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">
             Intereses
           </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
             Propiedades que le interesan
           </h2>
         </div>

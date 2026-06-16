@@ -64,10 +64,9 @@ export function AddCommentButton({ contactId }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Agregar comentario"
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-zinc-950 text-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] transition hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.4)] active:translate-y-0 sm:h-auto sm:w-auto sm:rounded-full sm:px-5 sm:gap-2.5"
+        className="fixed bottom-28 right-5 z-[70] flex h-14 w-14 items-center justify-center rounded-full bg-brand-primary text-zinc-950 shadow-[0_8px_32px_rgba(210,255,30,0.4)] transition hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(210,255,30,0.5)] active:translate-y-0 lg:bottom-8 lg:right-6"
       >
-        <MessageSquarePlus className="h-5 w-5 shrink-0" />
-        <span className="hidden text-sm font-semibold sm:block">Comentario</span>
+        <MessageSquarePlus className="h-5 w-5" />
       </button>
 
       {open && (
