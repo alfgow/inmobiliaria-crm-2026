@@ -28,7 +28,7 @@ export default function RootLayout({
       lang="es"
       className={`${robotoCondensed.variable} ${shadowsIntoLight.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[var(--background)] font-sans text-[var(--foreground)]">
+      <body className="min-h-full overflow-x-hidden bg-[var(--background)] font-sans text-[var(--foreground)]">
         {children}
       </body>
     </html>

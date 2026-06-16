@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
+import { AddCommentButton } from "@/features/contacts/components/add-comment-button";
 import { ContactInterestsCard } from "@/features/contacts/components/contact-interests-card";
 import { DeleteContactButton } from "@/features/contacts/components/delete-contact-button";
 import { prisma } from "@/lib/prisma";
@@ -222,7 +223,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
     <main className="relative isolate min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-slate-50 px-4 py-6 pb-28 text-zinc-950 sm:px-6 lg:px-10 lg:pb-6">
       <AnimatedDashboardBackground>
         <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 gap-y-3">
             <Link
               href="/contactos"
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-[0_12px_30px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:text-slate-950"
@@ -258,15 +259,15 @@ export default async function ContactDetailPage({ params }: PageProps) {
             <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)] lg:items-end">
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] border border-white/10 bg-white/10 text-xl font-semibold text-white">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[1.5rem] border border-white/10 bg-white/10 text-xl font-semibold text-white">
                     {getInitials(contact.nombre)}
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-medium uppercase tracking-[0.3em] text-zinc-400">
                       Contacto
                     </p>
-                    <h1 className="mt-1 text-4xl font-semibold tracking-tight sm:text-6xl">
+                    <h1 className="mt-1 break-words text-3xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
                       {contact.nombre}
                     </h1>
                   </div>
@@ -375,14 +376,14 @@ export default async function ContactDetailPage({ params }: PageProps) {
                     key={item.label}
                     className="flex items-start gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-4"
                   >
-                    <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-slate-900 shadow-sm">
+                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-slate-900 shadow-sm">
                       <item.icon className="h-4 w-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
                         {item.label}
                       </p>
-                      <p className="mt-1 text-base font-medium text-slate-950">
+                      <p className="mt-1 break-words text-base font-medium text-slate-950">
                         {item.value}
                       </p>
                     </div>
@@ -480,6 +481,8 @@ export default async function ContactDetailPage({ params }: PageProps) {
           </section>
         </div>
       </AnimatedDashboardBackground>
+
+      <AddCommentButton contactId={contact.id.toString()} />
     </main>
   );
 }
