@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json* ./
 
-RUN npm install --omit=dev
+RUN npm install
 
 
 # Etapa 2: build
