@@ -220,7 +220,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
     timeline[0]?.createdAt ?? contact.updated_at ?? contact.created_at;
 
   return (
-    <main className="relative isolate min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-slate-50 px-4 py-6 pb-44 text-zinc-950 sm:px-6 sm:pb-36 lg:px-10 lg:pb-6">
+    <main className="relative isolate min-h-[100dvh] bg-slate-50 px-4 py-6 pb-44 text-zinc-950 sm:px-6 sm:pb-36 lg:px-10 lg:pb-6">
       <AnimatedDashboardBackground>
         <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
           <div className="flex flex-wrap items-center justify-between gap-3 gap-y-3">
