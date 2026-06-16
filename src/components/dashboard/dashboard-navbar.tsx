@@ -112,8 +112,8 @@ export function DashboardMobileDock() {
   return (
     <nav
       aria-label="Navegación principal"
-      className="fixed inset-x-4 bottom-4 z-[60] grid grid-cols-5 gap-2 rounded-[1.5rem] border border-white/50 bg-white/55 p-2 text-[#2c2c2c] shadow-[0_18px_50px_rgba(44,44,44,0.14)] backdrop-blur-3xl supports-[backdrop-filter]:bg-white/55 lg:hidden"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.35rem)" }}
+      className="fixed inset-x-3 bottom-3 z-[60] grid grid-cols-5 gap-1.5 rounded-[1.4rem] border border-white/50 bg-white/55 p-1.5 text-[#2c2c2c] shadow-[0_18px_50px_rgba(44,44,44,0.14)] backdrop-blur-3xl supports-[backdrop-filter]:bg-white/55 lg:hidden"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.25rem)" }}
     >
       {navigationItems.slice(0, 4).map((item) => {
         const Icon = item.icon;
@@ -124,13 +124,13 @@ export function DashboardMobileDock() {
             key={item.href}
             href={item.href}
             className={[
-              "flex h-[4.4rem] flex-col items-center justify-center rounded-[1.2rem] border px-2 py-1 text-[10px] font-medium shadow-sm transition active:scale-[0.98]",
+              "flex h-[4.1rem] flex-col items-center justify-center rounded-[1.1rem] border px-2 py-1 text-[10px] font-medium shadow-sm transition active:scale-[0.98]",
               active
                 ? "border-brand-secondary/20 bg-brand-secondary/10 text-brand-secondary"
                 : "border-border-soft bg-white/90 text-[#5c5c5c]",
             ].join(" ")}
           >
-            <Icon className={["h-5 w-5", active ? "text-brand-secondary" : "text-[#2c2c2c]"].join(" ")} />
+            <Icon className={["h-[1.1rem] w-[1.1rem]", active ? "text-brand-secondary" : "text-[#2c2c2c]"].join(" ")} />
             <span className="sr-only">{item.label}</span>
           </Link>
         );

@@ -220,7 +220,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
     timeline[0]?.createdAt ?? contact.updated_at ?? contact.created_at;
 
   return (
-    <main className="relative isolate min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-slate-50 px-4 py-6 pb-28 text-zinc-950 sm:px-6 lg:px-10 lg:pb-6">
+    <main className="relative isolate min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-slate-50 px-4 py-6 pb-44 text-zinc-950 sm:px-6 sm:pb-36 lg:px-10 lg:pb-6">
       <AnimatedDashboardBackground>
         <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
           <div className="flex flex-wrap items-center justify-between gap-3 gap-y-3">
@@ -337,7 +337,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
           </section>
 
           <section className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
+            <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
                   <UserRound className="h-5 w-5" />
@@ -352,7 +352,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                 </div>
               </div>
 
-              <div className="mt-6 space-y-4">
+              <div className="mt-5 space-y-4 sm:mt-6">
                 {[
                   { label: "Teléfono", value: contact.telefono, icon: Phone },
                   {
