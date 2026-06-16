@@ -64,13 +64,13 @@ export function AddCommentButton({ contactId }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Agregar comentario"
-        className="fixed bottom-28 right-4 z-[70] isolate flex h-12 w-12 items-center justify-center rounded-full border border-black/5 bg-brand-primary text-zinc-950 shadow-[0_18px_50px_rgba(210,255,30,0.35),0_8px_18px_rgba(15,23,42,0.12)] transition hover:-translate-y-1 hover:shadow-[0_24px_65px_rgba(210,255,30,0.42),0_12px_24px_rgba(15,23,42,0.16)] active:translate-y-0 motion-safe:animate-[pulse_4.5s_ease-in-out_infinite] lg:bottom-8 lg:right-6 lg:h-14 lg:w-14"
+        className="fixed bottom-32 right-4 z-[70] isolate flex h-14 w-14 items-center justify-center rounded-full bg-brand-primary text-zinc-950 shadow-[0_24px_70px_rgba(210,255,30,0.45),0_12px_24px_rgba(15,23,42,0.18)] transition hover:-translate-y-1 hover:shadow-[0_28px_80px_rgba(210,255,30,0.5),0_16px_30px_rgba(15,23,42,0.22)] active:translate-y-0 lg:bottom-8 lg:right-6 lg:h-14 lg:w-14"
       >
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute inset-[-10px] -z-10 rounded-full bg-brand-primary/25 blur-xl motion-safe:animate-[pulse_4.5s_ease-in-out_infinite]"
+          className="pointer-events-none absolute inset-[-14px] -z-10 rounded-full bg-brand-primary/30 blur-2xl"
         />
-        <MessageSquarePlus className="h-4 w-4 lg:h-5 lg:w-5" />
+        <MessageSquarePlus className="h-5 w-5 lg:h-5 lg:w-5" />
       </button>
 
       {open && (

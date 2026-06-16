@@ -105,7 +105,7 @@ export function ContactInterestsCard({
   }
 
   return (
-    <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
+    <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
       {/* Card header */}
       <div className="flex items-center gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-600 text-white">
@@ -122,7 +122,7 @@ export function ContactInterestsCard({
       </div>
 
       {/* Add interest row */}
-      <div className="mt-5 flex flex-col gap-3 sm:mt-6 sm:flex-row">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <select
           value={selectedPropertyId}
           onChange={(e) => {
@@ -173,7 +173,7 @@ export function ContactInterestsCard({
               return (
                 <div
                   key={interestId}
-                  className={`relative rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 transition-opacity sm:p-5 ${isRemoving ? "opacity-40" : ""}`}
+                  className={`relative rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 transition-opacity ${isRemoving ? "opacity-40" : ""}`}
                 >
                   {/* Delete button — fixed top-right */}
                   <button
