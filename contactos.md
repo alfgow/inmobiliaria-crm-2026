@@ -42,6 +42,7 @@ Content-Type: application/json
   "nombre": "Maria Lopez",
   "email": "maria@example.com",
   "telefono": "5512345678",
+  "estado": "nuevo",
   "fuente": "Web",
   "fechas": {
     "creado": "2026-07-01T20:15:00.000Z",
@@ -100,6 +101,7 @@ Si el inmueble asociado ya no existe, `inmueble` regresa `null`.
 - `nombre` es requerido y maximo 100 caracteres.
 - `telefono` es requerido, maximo 20 caracteres y debe ser unico.
 - `email` es opcional, maximo 150 caracteres y debe tener formato valido si se envia.
+- `estado` es opcional al crear y editable despues. Valores permitidos: `nuevo`, `en_contacto`, `rechazado`, `bloqueado`. En creacion, si no se envia, se guarda como `nuevo`.
 - `fuente` es opcional, maximo 50 caracteres. En creacion, si no se envia, se guarda como `Web`.
 - `comentario` es requerido para crear/editar comentarios y maximo 2000 caracteres.
 - No se permite agregar dos veces el mismo inmueble como interes del mismo contacto.
@@ -136,6 +138,7 @@ GET /api/v1/contactos
 | `perPage` | number | `20` | Registros por pagina. Maximo `100`. |
 | `q` | string | `""` | Busca por `nombre`, `email` o `telefono`. Solo aplica desde 2 caracteres. |
 | `fuente` | string | `""` | Filtra por fuente con comparacion case-insensitive. |
+| `estado` | string | `""` | Filtra por estado. Valores: `nuevo`, `en_contacto`, `rechazado`, `bloqueado`. |
 
 ### Ejemplo
 
@@ -154,6 +157,7 @@ curl -X GET "http://localhost:3000/api/v1/contactos?q=maria&page=1&perPage=20" \
       "nombre": "Maria Lopez",
       "email": "maria@example.com",
       "telefono": "5512345678",
+      "estado": "nuevo",
       "fuente": "Web",
       "fechas": {
         "creado": "2026-07-01T20:15:00.000Z",
@@ -192,6 +196,7 @@ Crea un contacto. Opcionalmente puede crear intereses y comentarios iniciales en
   "nombre": "Maria Lopez",
   "telefono": "5512345678",
   "email": "maria@example.com",
+  "estado": "nuevo",
   "fuente": "Web",
   "intereses": ["45", "46"],
   "comentarios": ["Busca casa al norte de la ciudad."]
@@ -250,6 +255,7 @@ curl -X POST "http://localhost:3000/api/v1/contactos" \
     "nombre": "Maria Lopez",
     "telefono": "5512345678",
     "email": "maria@example.com",
+    "estado": "en_contacto",
     "fuente": "Instagram",
     "intereses": ["45"],
     "comentarios": ["Busca propiedad para agosto."]
@@ -267,6 +273,7 @@ Regresa el contacto creado con `intereses` y `comentarios`.
     "nombre": "Maria Lopez",
     "email": "maria@example.com",
     "telefono": "5512345678",
+    "estado": "en_contacto",
     "fuente": "Instagram",
     "fechas": {
       "creado": "2026-07-01T20:15:00.000Z",
@@ -336,6 +343,7 @@ curl -X GET "http://localhost:3000/api/v1/contactos/123" \
     "nombre": "Maria Lopez",
     "email": "maria@example.com",
     "telefono": "5512345678",
+    "estado": "nuevo",
     "fuente": "Web",
     "fechas": {
       "creado": "2026-07-01T20:15:00.000Z",
@@ -369,6 +377,7 @@ Requiere enviar todos los campos editables del contacto.
   "nombre": "Maria Lopez",
   "telefono": "5512345678",
   "email": "maria@example.com",
+  "estado": "en_contacto",
   "fuente": "Referido"
 }
 ```
@@ -385,13 +394,13 @@ Regresa el contacto actualizado con intereses y comentarios.
 PATCH /api/v1/contactos/{id}
 ```
 
-Permite actualizar uno o mas campos: `nombre`, `telefono`, `email`, `fuente`.
+Permite actualizar uno o mas campos: `nombre`, `telefono`, `email`, `estado`, `fuente`.
 
 ### Body
 
 ```json
 {
-  "fuente": "Facebook"
+  "estado": "rechazado"
 }
 ```
 
@@ -410,7 +419,7 @@ Para quitar email o fuente:
 curl -X PATCH "http://localhost:3000/api/v1/contactos/123" \
   -H "Authorization: Bearer crm_xxx_xxx" \
   -H "Content-Type: application/json" \
-  -d '{ "fuente": "Facebook" }'
+  -d '{ "estado": "rechazado" }'
 ```
 
 ### Respuesta 200
@@ -774,4 +783,3 @@ curl -X DELETE "http://localhost:3000/api/v1/contactos/123/comentarios/30" \
   "message": "Comentario eliminado."
 }
 ```
-
