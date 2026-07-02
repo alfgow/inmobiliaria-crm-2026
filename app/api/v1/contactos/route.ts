@@ -15,6 +15,7 @@ import {
   serializeContact,
   toDecimalId,
 } from "@/features/contacts/services/contact-api.service";
+import { isContactStatus } from "@/features/contacts/types/contact-status";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
   const perPage = Math.min(parsePositiveInt(searchParams.get("perPage"), 20), 100);
   const query = searchParams.get("q")?.trim() ?? "";
   const fuente = searchParams.get("fuente")?.trim() ?? "";
+  const estado = searchParams.get("estado")?.trim().toLowerCase() ?? "";
   const where: Prisma.contactosWhereInput = {};
 
   if (query.length >= 2) {
@@ -42,6 +44,17 @@ export async function GET(request: NextRequest) {
 
   if (fuente) {
     where.fuente = { equals: fuente, mode: "insensitive" };
+  }
+
+  if (estado) {
+    if (!isContactStatus(estado)) {
+      return NextResponse.json(
+        { error: "estado debe ser uno de: nuevo, en_contacto, rechazado, bloqueado." },
+        { status: 400 },
+      );
+    }
+
+    where.estado = estado;
   }
 
   try {
@@ -122,6 +135,7 @@ export async function POST(request: NextRequest) {
           nombre: parsed.data.nombre,
           telefono: parsed.data.telefono,
           email: parsed.data.email,
+          estado: parsed.data.estado,
           fuente: parsed.data.fuente ?? "Web",
         },
         select: contactSelect,

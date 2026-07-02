@@ -17,6 +17,10 @@ import { AnimatedDashboardBackground } from "@/components/dashboard/animated-das
 import { AddCommentButton } from "@/features/contacts/components/add-comment-button";
 import { ContactInterestsCard } from "@/features/contacts/components/contact-interests-card";
 import { DeleteContactButton } from "@/features/contacts/components/delete-contact-button";
+import {
+  contactStatusBadgeClass,
+  getContactStatusLabel,
+} from "@/features/contacts/types/contact-status";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "../../../generated/prisma/client";
 
@@ -101,6 +105,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
         nombre: true,
         email: true,
         telefono: true,
+        estado: true,
         fuente: true,
         created_at: true,
         updated_at: true,
@@ -296,6 +301,11 @@ export default async function ContactDetailPage({ params }: PageProps) {
                   <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/90">
                     {contact.fuente ?? "Sin fuente"}
                   </span>
+                  <span
+                    className={`rounded-full border px-4 py-2 text-sm font-medium ${contactStatusBadgeClass(contact.estado)}`}
+                  >
+                    {getContactStatusLabel(contact.estado)}
+                  </span>
                   <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/90">
                     {formatDate(lastActivity)}
                   </span>
@@ -315,7 +325,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                       Estado actual
                     </p>
                     <p className="mt-1 text-lg font-semibold text-white">
-                      Seguimiento activo
+                      {getContactStatusLabel(contact.estado)}
                     </p>
                   </div>
                 </div>
@@ -375,6 +385,11 @@ export default async function ContactDetailPage({ params }: PageProps) {
                     icon: Mail,
                   },
                   { label: "Origen", value: contact.fuente ?? "Sin fuente", icon: Sparkles },
+                  {
+                    label: "Estado",
+                    value: getContactStatusLabel(contact.estado),
+                    icon: UserRound,
+                  },
                   {
                     label: "Creación",
                     value: formatDate(contact.created_at),

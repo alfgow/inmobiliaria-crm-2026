@@ -7,6 +7,15 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ContactStatus {
+  nuevo
+  en_contacto
+  rechazado
+  bloqueado
+
+  @@map("contactos_estado")
+}
+
 model api_keys {
   id           BigInt    @id(map: "idx_19222_primary") @default(autoincrement())
   user_id      Decimal   @db.Decimal
@@ -71,14 +80,14 @@ model comentarios {
 }
 
 model contactos {
-  id         BigInt                           @id(map: "idx_19302_primary") @default(autoincrement())
-  nombre     String                           @db.VarChar(100)
-  email      String?                          @db.VarChar(150)
-  telefono   String                           @unique(map: "idx_19302_telefono") @db.VarChar(20)
-  estado     Unsupported("contactos_estado")? @default(dbgenerated("'nuevo'::dbs14813645.contactos_estado"))
-  fuente     String?                          @default("Web") @db.VarChar(50)
-  created_at DateTime?                        @default(now()) @db.Timestamptz(6)
-  updated_at DateTime?                        @db.Timestamptz(6)
+  id         BigInt        @id(map: "idx_19302_primary") @default(autoincrement())
+  nombre     String        @db.VarChar(100)
+  email      String?       @db.VarChar(150)
+  telefono   String        @unique(map: "idx_19302_telefono") @db.VarChar(20)
+  estado     ContactStatus @default(nuevo)
+  fuente     String?       @default("Web") @db.VarChar(50)
+  created_at DateTime?     @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?     @db.Timestamptz(6)
 }
 
 model error_logs {

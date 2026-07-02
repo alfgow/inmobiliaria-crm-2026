@@ -29,6 +29,7 @@ export default async function EditContactPage({ params }: PageProps) {
       nombre: true,
       email: true,
       telefono: true,
+      estado: true,
       fuente: true,
     },
   });
@@ -79,6 +80,7 @@ export default async function EditContactPage({ params }: PageProps) {
               nombre: contact.nombre,
               telefono: contact.telefono,
               email: contact.email,
+              estado: contact.estado,
               fuente: contact.fuente,
             }}
           />

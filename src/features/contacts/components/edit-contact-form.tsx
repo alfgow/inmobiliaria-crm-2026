@@ -4,6 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { updateContact } from "../actions/updateContact";
+import {
+  CONTACT_STATUS_OPTIONS,
+  contactStatusBadgeClass,
+  getContactStatusLabel,
+  type ContactStatus,
+} from "@/features/contacts/types/contact-status";
 
 const FUENTE_OPTIONS = ["Web", "Facebook", "Instagram", "Referido", "Otro"];
 
@@ -13,6 +19,7 @@ type EditContactFormProps = {
     nombre: string;
     telefono: string;
     email: string | null;
+    estado: ContactStatus;
     fuente: string | null;
   };
 };
@@ -26,6 +33,7 @@ export function EditContactForm({ contact }: EditContactFormProps) {
     nombre: contact.nombre,
     telefono: contact.telefono,
     email: contact.email ?? "",
+    estado: contact.estado,
     fuente: contact.fuente ?? "Web",
   });
 
@@ -46,6 +54,7 @@ export function EditContactForm({ contact }: EditContactFormProps) {
         nombre: formState.nombre,
         telefono: formState.telefono,
         email: formState.email,
+        estado: formState.estado,
         fuente: formState.fuente,
       });
 
@@ -62,6 +71,7 @@ export function EditContactForm({ contact }: EditContactFormProps) {
     formState.nombre !== contact.nombre ||
     formState.telefono !== contact.telefono ||
     formState.email !== (contact.email ?? "") ||
+    formState.estado !== contact.estado ||
     formState.fuente !== (contact.fuente ?? "Web");
 
   return (
@@ -136,6 +146,22 @@ export function EditContactForm({ contact }: EditContactFormProps) {
             </select>
           </label>
 
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-slate-700">Estado</span>
+            <select
+              name="estado"
+              value={formState.estado}
+              onChange={handleChange}
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+            >
+              {CONTACT_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
           {error && (
             <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
               {error}
@@ -191,6 +217,13 @@ export function EditContactForm({ contact }: EditContactFormProps) {
                   changed: formState.email !== (contact.email ?? ""),
                 },
                 {
+                  label: "Estado",
+                  value: getContactStatusLabel(formState.estado),
+                  accent: "sky",
+                  changed: formState.estado !== contact.estado,
+                  badgeClass: contactStatusBadgeClass(formState.estado),
+                },
+                {
                   label: "Fuente",
                   value: formState.fuente || "Sin fuente",
                   accent: "emerald",
@@ -220,9 +253,17 @@ export function EditContactForm({ contact }: EditContactFormProps) {
                     </span>
                   )}
                 </div>
-                <span className="mt-1 block font-medium text-slate-950">
-                  {item.value}
-                </span>
+                {"badgeClass" in item ? (
+                  <span
+                    className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${item.badgeClass}`}
+                  >
+                    {item.value}
+                  </span>
+                ) : (
+                  <span className="mt-1 block font-medium text-slate-950">
+                    {item.value}
+                  </span>
+                )}
               </div>
             ))}
           </div>

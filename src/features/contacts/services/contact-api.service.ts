@@ -1,5 +1,10 @@
 import { Prisma } from "../../../../app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  DEFAULT_CONTACT_STATUS,
+  type ContactStatus,
+  isContactStatus,
+} from "@/features/contacts/types/contact-status";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -12,6 +17,7 @@ type ContactRecord = {
   nombre: string;
   email: string | null;
   telefono: string;
+  estado: ContactStatus;
   fuente: string | null;
   created_at: Date | null;
   updated_at: Date | null;
@@ -46,6 +52,7 @@ export type ContactCreateData = {
   nombre: string;
   telefono: string;
   email: string | null;
+  estado: ContactStatus;
   fuente: string | null;
   intereses: string[];
   comentarios: string[];
@@ -55,6 +62,7 @@ export type ContactUpdateData = {
   nombre?: string;
   telefono?: string;
   email?: string | null;
+  estado?: ContactStatus;
   fuente?: string | null;
 };
 
@@ -67,6 +75,7 @@ export const contactSelect = {
   nombre: true,
   email: true,
   telefono: true,
+  estado: true,
   fuente: true,
   created_at: true,
   updated_at: true,
@@ -173,6 +182,23 @@ function validateFuente(fuente: string | null): ValidationResult<string | null> 
   }
 
   return { ok: true, data: fuente };
+}
+
+function parseContactStatusValue(value: unknown): ValidationResult<ContactStatus> {
+  if (typeof value !== "string") {
+    return { ok: false, error: "estado debe ser texto." };
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (!isContactStatus(normalized)) {
+    return {
+      ok: false,
+      error: "estado debe ser uno de: nuevo, en_contacto, rechazado, bloqueado.",
+    };
+  }
+
+  return { ok: true, data: normalized };
 }
 
 function parseIdValue(value: unknown, fieldName: string): ValidationResult<string> {
@@ -349,6 +375,12 @@ export function parseCreateContactPayload(
   const fuente = validateFuente(rawFuente.data);
   if (!fuente.ok) return fuente;
 
+  const estado =
+    payload.estado === undefined || payload.estado === null || payload.estado === ""
+      ? { ok: true as const, data: DEFAULT_CONTACT_STATUS }
+      : parseContactStatusValue(payload.estado);
+  if (!estado.ok) return estado;
+
   const intereses = parseInterestIds(payload);
   if (!intereses.ok) return intereses;
 
@@ -361,6 +393,7 @@ export function parseCreateContactPayload(
       nombre: nombre.data,
       telefono: telefono.data,
       email: email.data,
+      estado: estado.data,
       fuente: fuente.data,
       intereses: intereses.data,
       comentarios: comentarios.data,
@@ -397,6 +430,12 @@ export function parseUpdateContactPayload(
     const email = validateEmail(rawEmail.data);
     if (!email.ok) return email;
     data.email = email.data;
+  }
+
+  if (payload.estado !== undefined) {
+    const estado = parseContactStatusValue(payload.estado);
+    if (!estado.ok) return estado;
+    data.estado = estado.data;
   }
 
   if (payload.fuente !== undefined || requireFullPayload) {
@@ -466,6 +505,7 @@ export function serializeContact(
     nombre: contact.nombre,
     email: contact.email,
     telefono: contact.telefono,
+    estado: contact.estado,
     fuente: contact.fuente,
     fechas: {
       creado: contact.created_at?.toISOString() ?? null,

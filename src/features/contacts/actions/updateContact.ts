@@ -2,12 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import {
+  type ContactStatus,
+  isContactStatus,
+} from "@/features/contacts/types/contact-status";
 
 type UpdateContactInput = {
   id: string;
   nombre: string;
   telefono: string;
   email: string;
+  estado: string;
   fuente: string;
 };
 
@@ -18,13 +23,22 @@ type UpdateContactResult =
 export async function updateContact(
   input: UpdateContactInput,
 ): Promise<UpdateContactResult> {
-  const { id, nombre, telefono, email, fuente } = input;
+  const { id, nombre, telefono, email, estado, fuente } = input;
 
   if (!nombre.trim()) {
     return { success: false, error: "El nombre es requerido." };
   }
   if (!telefono.trim()) {
     return { success: false, error: "El teléfono es requerido." };
+  }
+
+  const normalizedStatus = estado.trim().toLowerCase();
+
+  if (!isContactStatus(normalizedStatus)) {
+    return {
+      success: false,
+      error: "El estado seleccionado no es válido.",
+    };
   }
 
   let contactId: bigint;
@@ -41,6 +55,7 @@ export async function updateContact(
         nombre: nombre.trim(),
         telefono: telefono.trim(),
         email: email.trim() || null,
+        estado: normalizedStatus as ContactStatus,
         fuente: fuente.trim() || null,
         updated_at: new Date(),
       },

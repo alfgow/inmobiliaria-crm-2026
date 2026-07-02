@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "../../../../app/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_CONTACT_STATUS } from "@/features/contacts/types/contact-status";
 
 type ActionResult = { success: false; error: string };
 
@@ -31,6 +32,7 @@ export async function createContact(
         nombre: nombreTrim,
         telefono: telefonoTrim,
         email: emailTrim || null,
+        estado: DEFAULT_CONTACT_STATUS,
         fuente: "Web",
       },
       select: { id: true },

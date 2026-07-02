@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { isDatabaseUnavailableError } from "@/lib/prisma-error";
+import type { ContactStatus } from "@/features/contacts/types/contact-status";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ type SearchResult = {
   nombre: string;
   email: string | null;
   telefono: string;
+  estado: ContactStatus;
   fuente: string | null;
   createdAt: string | null;
 };
@@ -19,6 +21,7 @@ function normalizeContact(contact: {
   nombre: string;
   email: string | null;
   telefono: string;
+  estado: ContactStatus;
   fuente: string | null;
   created_at: Date | null;
 }): SearchResult {
@@ -27,6 +30,7 @@ function normalizeContact(contact: {
     nombre: contact.nombre,
     email: contact.email,
     telefono: contact.telefono,
+    estado: contact.estado,
     fuente: contact.fuente,
     createdAt: contact.created_at?.toISOString() ?? null,
   };

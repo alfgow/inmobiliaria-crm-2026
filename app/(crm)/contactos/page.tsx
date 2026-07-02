@@ -3,6 +3,10 @@ import { Search } from "lucide-react";
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import { ContactsSearchInput } from "@/features/contacts/components/contacts-search-input";
+import {
+  contactStatusBadgeClass,
+  getContactStatusLabel,
+} from "@/features/contacts/types/contact-status";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +73,7 @@ export default async function ContactsPage({ searchParams }: PageProps) {
           nombre: true,
           email: true,
           telefono: true,
+          estado: true,
           fuente: true,
           created_at: true,
         },
@@ -166,6 +171,11 @@ export default async function ContactsPage({ searchParams }: PageProps) {
                                 {contact.fuente}
                               </span>
                             )}
+                            <span
+                              className={`max-w-[110px] truncate rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] ${contactStatusBadgeClass(contact.estado)}`}
+                            >
+                              {getContactStatusLabel(contact.estado)}
+                            </span>
                             <span className="shrink-0 text-[11px] font-medium text-brand-text/45 transition group-hover:text-brand-secondary">
                               Ver →
                             </span>
