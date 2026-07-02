@@ -5,6 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["public", "dbs14813645"]
 }
 
 enum ContactStatus {
@@ -14,6 +15,7 @@ enum ContactStatus {
   bloqueado
 
   @@map("contactos_estado")
+  @@schema("dbs14813645")
 }
 
 model api_keys {
@@ -28,6 +30,7 @@ model api_keys {
   updated_at   DateTime? @db.Timestamptz(6)
 
   @@index([user_id], map: "idx_19222_api_keys_user_id_foreign")
+  @@schema("public")
 }
 
 model asesores {
@@ -37,6 +40,7 @@ model asesores {
   telefono   String?   @db.VarChar(50)
   created_at DateTime? @db.Timestamptz(6)
   updated_at DateTime? @db.Timestamptz(6)
+  @@schema("public")
 }
 
 model blogs {
@@ -49,6 +53,7 @@ model blogs {
   updated_at DateTime? @db.Timestamptz(6)
 
   @@index([autor_id], map: "idx_19238_autor_id")
+  @@schema("public")
 }
 
 model codigos_postales {
@@ -68,6 +73,7 @@ model codigos_postales {
   id_asenta_cpcons String? @db.VarChar(20)
   d_zona           String? @db.VarChar(20)
   c_cve_ciudad     String? @db.VarChar(10)
+  @@schema("public")
 }
 
 model comentarios {
@@ -77,6 +83,7 @@ model comentarios {
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([contacto_id], map: "idx_19289_contacto_id")
+  @@schema("public")
 }
 
 model contactos {
@@ -88,6 +95,7 @@ model contactos {
   fuente     String?       @default("Web") @db.VarChar(50)
   created_at DateTime?     @default(now()) @db.Timestamptz(6)
   updated_at DateTime?     @db.Timestamptz(6)
+  @@schema("public")
 }
 
 model error_logs {
@@ -107,6 +115,7 @@ model error_logs {
   updated_at      DateTime? @db.Timestamptz(6)
 
   @@index([user_id], map: "idx_19311_error_logs_user_id_foreign")
+  @@schema("public")
 }
 
 model regina_contextos {
@@ -117,6 +126,7 @@ model regina_contextos {
   rechazos_post Int?
   historial    Json?
   updated_at   DateTime? @db.Timestamp(6)
+  @@schema("public")
 }
 
 model inmueble_estatus {
@@ -126,6 +136,7 @@ model inmueble_estatus {
   color       String?     @default("#ffffff") @db.VarChar(20)
   orden       BigInt?     @default(0)
   inmuebles   inmuebles[]
+  @@schema("public")
 }
 
 model inmueble_imagenes {
@@ -141,6 +152,7 @@ model inmueble_imagenes {
   updated_at  DateTime? @db.Timestamptz(6)
 
   @@index([inmueble_id], map: "idx_19360_inmueble_id")
+  @@schema("public")
 }
 
 model inmuebles {
@@ -184,6 +196,7 @@ model inmuebles {
 
   @@index([asesor_id], map: "idx_19328_asesor_id")
   @@index([estatus_id], map: "idx_19328_estatus_id")
+  @@schema("public")
 }
 
 model interacciones_ia {
@@ -193,6 +206,7 @@ model interacciones_ia {
   created_at  DateTime? @default(now()) @db.Timestamptz(6)
 
   @@index([contacto_id], map: "idx_19372_contacto_id")
+  @@schema("public")
 }
 
 model intereses {
@@ -203,6 +217,7 @@ model intereses {
 
   @@unique([contacto_id, inmueble_id], map: "idx_19380_contacto_inmueble_unique")
   @@index([inmueble_id], map: "idx_19380_inmueble_id")
+  @@schema("public")
 }
 
 model restricciones_inmueble {
@@ -218,6 +233,7 @@ model restricciones_inmueble {
   observaciones                  String?
 
   @@index([id_inmueble], map: "idx_19414_id_inmueble")
+  @@schema("public")
 }
 
 model role_user {
@@ -226,11 +242,13 @@ model role_user {
 
   @@id([user_id, role_id], map: "idx_19432_primary")
   @@index([role_id], map: "idx_19432_role_id")
+  @@schema("public")
 }
 
 model roles {
   id     BigInt @id(map: "idx_19428_primary") @default(autoincrement())
   nombre String @unique(map: "idx_19428_nombre") @db.VarChar(50)
+  @@schema("public")
 }
 
 model users {
@@ -243,4 +261,5 @@ model users {
   remember_token String?   @db.VarChar(255)
   created_at     DateTime? @default(now()) @db.Timestamptz(6)
   updated_at     DateTime  @updatedAt @db.Timestamptz(6)
+  @@schema("public")
 }
