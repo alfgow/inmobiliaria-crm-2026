@@ -15,10 +15,10 @@ import { notFound } from "next/navigation";
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import { AddCommentButton } from "@/features/contacts/components/add-comment-button";
+import { ContactStatusSelect } from "@/features/contacts/components/contact-status-select";
 import { ContactInterestsCard } from "@/features/contacts/components/contact-interests-card";
 import { DeleteContactButton } from "@/features/contacts/components/delete-contact-button";
 import {
-  contactStatusBadgeClass,
   getContactStatusLabel,
 } from "@/features/contacts/types/contact-status";
 import { prisma } from "@/lib/prisma";
@@ -301,11 +301,10 @@ export default async function ContactDetailPage({ params }: PageProps) {
                   <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/90">
                     {contact.fuente ?? "Sin fuente"}
                   </span>
-                  <span
-                    className={`rounded-full border px-4 py-2 text-sm font-medium ${contactStatusBadgeClass(contact.estado)}`}
-                  >
-                    {getContactStatusLabel(contact.estado)}
-                  </span>
+                  <ContactStatusSelect
+                    contactId={contact.id.toString()}
+                    currentStatus={contact.estado}
+                  />
                   <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/90">
                     {formatDate(lastActivity)}
                   </span>

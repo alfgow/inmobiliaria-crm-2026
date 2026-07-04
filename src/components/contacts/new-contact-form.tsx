@@ -5,6 +5,13 @@ import { Loader2 } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 
 import { createContact } from "@/features/contacts/actions/createContact";
+import {
+  CONTACT_STATUS_OPTIONS,
+  DEFAULT_CONTACT_STATUS,
+  contactStatusBadgeClass,
+  getContactStatusLabel,
+  type ContactStatus,
+} from "@/features/contacts/types/contact-status";
 
 type ActiveProperty = {
   id: string;
@@ -23,6 +30,7 @@ type FormState = {
   nombre: string;
   telefono: string;
   email: string;
+  estado: ContactStatus;
   inmuebleId: string;
   comentarios: string;
 };
@@ -51,6 +59,7 @@ export function NewContactForm({
     nombre: "",
     telefono: initialPhone,
     email: "",
+    estado: DEFAULT_CONTACT_STATUS,
     inmuebleId: "",
     comentarios: "",
   });
@@ -71,6 +80,7 @@ export function NewContactForm({
         formState.email,
         formState.inmuebleId,
         formState.comentarios,
+        formState.estado,
       );
 
       if (!result.success) {
@@ -142,6 +152,28 @@ export function NewContactForm({
               placeholder="correo@dominio.com"
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 disabled:opacity-60"
             />
+          </label>
+
+          <label className="grid gap-2">
+            <span className="text-sm font-medium text-slate-700">Estado</span>
+            <select
+              name="estado"
+              disabled={isPending}
+              value={formState.estado}
+              onChange={(e) =>
+                setFormState((prev) => ({
+                  ...prev,
+                  estado: e.target.value as ContactStatus,
+                }))
+              }
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-950 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 disabled:opacity-60"
+            >
+              {CONTACT_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="grid gap-2">
@@ -245,6 +277,19 @@ export function NewContactForm({
               </span>
               <span className="mt-1 block font-medium text-slate-950">
                 {summaryValue(formState.email, "Opcional")}
+              </span>
+            </div>
+
+            <div className="rounded-2xl border border-sky-200 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm">
+              <span className="block text-[10px] uppercase tracking-[0.3em] text-sky-500">
+                Estado
+              </span>
+              <span
+                className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${contactStatusBadgeClass(
+                  formState.estado,
+                )}`}
+              >
+                {getContactStatusLabel(formState.estado)}
               </span>
             </div>
 

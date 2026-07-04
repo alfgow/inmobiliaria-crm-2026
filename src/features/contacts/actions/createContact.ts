@@ -3,7 +3,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { DEFAULT_CONTACT_STATUS } from "@/features/contacts/types/contact-status";
+import {
+  DEFAULT_CONTACT_STATUS,
+  type ContactStatus,
+  isContactStatus,
+} from "@/features/contacts/types/contact-status";
 import {
   getPrismaErrorCode,
   toDecimalId,
@@ -21,12 +25,14 @@ export async function createContact(
   email: string,
   inmuebleId: string,
   comentario: string,
+  estado = DEFAULT_CONTACT_STATUS,
 ): Promise<ActionResult> {
   const nombreTrim = nombre.trim();
   const telefonoTrim = telefono.trim();
   const emailTrim = email.trim();
   const comentarioTrim = comentario.trim();
   const inmuebleIdTrim = inmuebleId.trim();
+  const normalizedStatus = estado.trim().toLowerCase();
 
   if (!nombreTrim) return { success: false, error: "El nombre es requerido." };
   if (!telefonoTrim) return { success: false, error: "El teléfono es requerido." };
@@ -50,6 +56,9 @@ export async function createContact(
   }
   if (!isPositiveId(inmuebleIdTrim)) {
     return { success: false, error: "La propiedad seleccionada no es válida." };
+  }
+  if (!isContactStatus(normalizedStatus)) {
+    return { success: false, error: "El estado seleccionado no es válido." };
   }
 
   let newContactId: bigint;
@@ -76,7 +85,7 @@ export async function createContact(
           nombre: nombreTrim,
           telefono: telefonoTrim,
           email: emailTrim || null,
-          estado: DEFAULT_CONTACT_STATUS,
+          estado: normalizedStatus as ContactStatus,
           fuente: "Web",
         },
         select: { id: true },
