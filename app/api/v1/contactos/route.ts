@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import {
   contactSelect,
   fetchContactDetail,
+  findContactByNormalizedPhone,
   findMissingPropertyIds,
   getPrismaErrorCode,
   parseCreateContactPayload,
@@ -15,6 +16,7 @@ import {
   serializeContact,
   toDecimalId,
 } from "@/features/contacts/services/contact-api.service";
+import { contactMatchesSearch } from "@/features/contacts/services/contact-normalization";
 import { isContactStatus } from "@/features/contacts/types/contact-status";
 
 export const dynamic = "force-dynamic";
@@ -34,14 +36,6 @@ export async function GET(request: NextRequest) {
   const estado = searchParams.get("estado")?.trim().toLowerCase() ?? "";
   const where: Prisma.contactosWhereInput = {};
 
-  if (query.length >= 2) {
-    where.OR = [
-      { nombre: { contains: query, mode: "insensitive" } },
-      { email: { contains: query, mode: "insensitive" } },
-      { telefono: { contains: query, mode: "insensitive" } },
-    ];
-  }
-
   if (fuente) {
     where.fuente = { equals: fuente, mode: "insensitive" };
   }
@@ -58,19 +52,23 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [contacts, total] = await Promise.all([
-      prisma.contactos.findMany({
-        where,
-        orderBy: { created_at: "desc" },
-        skip: (page - 1) * perPage,
-        take: perPage,
-        select: contactSelect,
-      }),
-      prisma.contactos.count({ where }),
-    ]);
+    const contacts = await prisma.contactos.findMany({
+      where,
+      orderBy: { created_at: "desc" },
+      select: contactSelect,
+    });
+    const filteredContacts =
+      query.length >= 2
+        ? contacts.filter((contact) => contactMatchesSearch(contact, query))
+        : contacts;
+    const total = filteredContacts.length;
+    const paginatedContacts = filteredContacts.slice(
+      (page - 1) * perPage,
+      page * perPage,
+    );
 
     return NextResponse.json({
-      data: contacts.map((contact) => serializeContact(contact)),
+      data: paginatedContacts.map((contact) => serializeContact(contact)),
       meta: {
         page,
         perPage,
@@ -126,6 +124,15 @@ export async function POST(request: NextRequest) {
           details: { inmuebleIds: missingPropertyIds },
         },
         { status: 404 },
+      );
+    }
+
+    const existingContact = await findContactByNormalizedPhone(parsed.data.telefono);
+
+    if (existingContact) {
+      return NextResponse.json(
+        { error: "Ya existe un contacto registrado con ese telefono." },
+        { status: 409 },
       );
     }
 

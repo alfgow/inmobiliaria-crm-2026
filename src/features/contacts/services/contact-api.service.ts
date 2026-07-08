@@ -5,6 +5,7 @@ import {
   type ContactStatus,
   isContactStatus,
 } from "@/features/contacts/types/contact-status";
+import { normalizePhoneNumber } from "@/features/contacts/services/contact-normalization";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -184,6 +185,20 @@ function validateFuente(fuente: string | null): ValidationResult<string | null> 
   return { ok: true, data: fuente };
 }
 
+function validatePhoneNumber(phone: string): ValidationResult<string> {
+  const normalized = normalizePhoneNumber(phone);
+
+  if (!normalized) {
+    return { ok: false, error: "telefono es requerido." };
+  }
+
+  if (normalized.length > 20) {
+    return { ok: false, error: "telefono no puede superar 20 digitos." };
+  }
+
+  return { ok: true, data: normalized };
+}
+
 function parseContactStatusValue(value: unknown): ValidationResult<ContactStatus> {
   if (typeof value !== "string") {
     return { ok: false, error: "estado debe ser texto." };
@@ -360,8 +375,11 @@ export function parseCreateContactPayload(
   const nombre = requiredString(payload.nombre, "nombre", 100);
   if (!nombre.ok) return nombre;
 
-  const telefono = requiredString(payload.telefono, "telefono", 20);
+  const telefono = requiredString(payload.telefono, "telefono", 50);
   if (!telefono.ok) return telefono;
+
+  const normalizedPhone = validatePhoneNumber(telefono.data);
+  if (!normalizedPhone.ok) return normalizedPhone;
 
   const rawEmail = optionalString(payload.email, "email");
   if (!rawEmail.ok) return rawEmail;
@@ -391,7 +409,7 @@ export function parseCreateContactPayload(
     ok: true,
     data: {
       nombre: nombre.data,
-      telefono: telefono.data,
+      telefono: normalizedPhone.data,
       email: email.data,
       estado: estado.data,
       fuente: fuente.data,
@@ -418,9 +436,12 @@ export function parseUpdateContactPayload(
   }
 
   if (payload.telefono !== undefined || requireFullPayload) {
-    const telefono = requiredString(payload.telefono, "telefono", 20);
+    const telefono = requiredString(payload.telefono, "telefono", 50);
     if (!telefono.ok) return telefono;
-    data.telefono = telefono.data;
+
+    const normalizedPhone = validatePhoneNumber(telefono.data);
+    if (!normalizedPhone.ok) return normalizedPhone;
+    data.telefono = normalizedPhone.data;
   }
 
   if (payload.email !== undefined || requireFullPayload) {
@@ -647,6 +668,29 @@ export async function contactExists(contactId: bigint) {
   });
 
   return Boolean(contact);
+}
+
+export async function findContactByNormalizedPhone(
+  phone: string,
+  excludeContactId?: bigint,
+) {
+  const normalizedPhone = normalizePhoneNumber(phone);
+
+  if (!normalizedPhone) {
+    return null;
+  }
+
+  const contacts = await prisma.contactos.findMany({
+    select: { id: true, telefono: true },
+  });
+
+  return (
+    contacts.find(
+      (contact) =>
+        contact.id !== excludeContactId &&
+        normalizePhoneNumber(contact.telefono) === normalizedPhone,
+    ) ?? null
+  );
 }
 
 export async function propertyExists(propertyId: bigint) {

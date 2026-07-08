@@ -7,6 +7,7 @@ import {
   contactExists,
   contactSelect,
   fetchContactDetail,
+  findContactByNormalizedPhone,
   getPrismaErrorCode,
   parseContactId,
   parseUpdateContactPayload,
@@ -175,6 +176,20 @@ async function updateContact(
   }
 
   try {
+    if (parsed.data.telefono) {
+      const existingContact = await findContactByNormalizedPhone(
+        parsed.data.telefono,
+        parsedId.data,
+      );
+
+      if (existingContact) {
+        return NextResponse.json(
+          { error: "El telefono ya esta registrado en otro contacto." },
+          { status: 409 },
+        );
+      }
+    }
+
     const updated = await prisma.contactos.update({
       where: { id: parsedId.data },
       data: {

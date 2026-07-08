@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isDatabaseUnavailableError } from "@/lib/prisma-error";
 import type { ContactStatus } from "@/features/contacts/types/contact-status";
+import { contactMatchesSearch } from "@/features/contacts/services/contact-normalization";
 
 export const dynamic = "force-dynamic";
 
@@ -49,36 +50,16 @@ export async function GET(request: Request) {
 
   try {
     const contacts = await prisma.contactos.findMany({
-      where: {
-        OR: [
-          {
-            nombre: {
-              contains: rawQuery,
-              mode: "insensitive",
-            },
-          },
-          {
-            email: {
-              contains: rawQuery,
-              mode: "insensitive",
-            },
-          },
-          {
-            telefono: {
-              contains: rawQuery,
-              mode: "insensitive",
-            },
-          },
-        ],
-      },
       orderBy: {
         created_at: "desc",
       },
-      take: 5,
     });
+    const results = contacts
+      .filter((contact) => contactMatchesSearch(contact, rawQuery))
+      .slice(0, 5);
 
     return NextResponse.json({
-      results: contacts.map(normalizeContact),
+      results: results.map(normalizeContact),
     });
   } catch (error) {
     if (isDatabaseUnavailableError(error)) {

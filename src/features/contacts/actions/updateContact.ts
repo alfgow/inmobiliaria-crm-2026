@@ -6,6 +6,8 @@ import {
   type ContactStatus,
   isContactStatus,
 } from "@/features/contacts/types/contact-status";
+import { findContactByNormalizedPhone } from "@/features/contacts/services/contact-api.service";
+import { normalizePhoneNumber } from "@/features/contacts/services/contact-normalization";
 
 type UpdateContactInput = {
   id: string;
@@ -24,12 +26,19 @@ export async function updateContact(
   input: UpdateContactInput,
 ): Promise<UpdateContactResult> {
   const { id, nombre, telefono, email, estado, fuente } = input;
+  const nombreTrim = nombre.trim();
+  const telefonoTrim = normalizePhoneNumber(telefono);
+  const emailTrim = email.trim();
+  const fuenteTrim = fuente.trim();
 
-  if (!nombre.trim()) {
+  if (!nombreTrim) {
     return { success: false, error: "El nombre es requerido." };
   }
-  if (!telefono.trim()) {
+  if (!telefonoTrim) {
     return { success: false, error: "El teléfono es requerido." };
+  }
+  if (telefonoTrim.length > 20) {
+    return { success: false, error: "El teléfono no puede superar 20 dígitos." };
   }
 
   const normalizedStatus = estado.trim().toLowerCase();
@@ -49,14 +58,23 @@ export async function updateContact(
   }
 
   try {
+    const existingContact = await findContactByNormalizedPhone(telefonoTrim, contactId);
+
+    if (existingContact) {
+      return {
+        success: false,
+        error: "El número de teléfono ya está registrado en otro contacto.",
+      };
+    }
+
     await prisma.contactos.update({
       where: { id: contactId },
       data: {
-        nombre: nombre.trim(),
-        telefono: telefono.trim(),
-        email: email.trim() || null,
+        nombre: nombreTrim,
+        telefono: telefonoTrim,
+        email: emailTrim || null,
         estado: normalizedStatus as ContactStatus,
-        fuente: fuente.trim() || null,
+        fuente: fuenteTrim || null,
         updated_at: new Date(),
       },
     });

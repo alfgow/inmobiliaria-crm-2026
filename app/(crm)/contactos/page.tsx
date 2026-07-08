@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import { ContactsSearchInput } from "@/features/contacts/components/contacts-search-input";
+import { contactMatchesSearch } from "@/features/contacts/services/contact-normalization";
 import {
   contactStatusBadgeClass,
   getContactStatusLabel,
@@ -58,26 +59,22 @@ export default async function ContactsPage({ searchParams }: PageProps) {
   const hasQuery = query.length >= 2;
 
   const contacts = hasQuery
-    ? await prisma.contactos.findMany({
-        where: {
-          OR: [
-            { nombre: { contains: query, mode: "insensitive" } },
-            { telefono: { contains: query } },
-            { email: { contains: query, mode: "insensitive" } },
-          ],
-        },
-        orderBy: { created_at: "desc" },
-        take: 60,
-        select: {
-          id: true,
-          nombre: true,
-          email: true,
-          telefono: true,
-          estado: true,
-          fuente: true,
-          created_at: true,
-        },
-      })
+    ? (
+        await prisma.contactos.findMany({
+          orderBy: { created_at: "desc" },
+          select: {
+            id: true,
+            nombre: true,
+            email: true,
+            telefono: true,
+            estado: true,
+            fuente: true,
+            created_at: true,
+          },
+        })
+      )
+        .filter((contact) => contactMatchesSearch(contact, query))
+        .slice(0, 60)
     : [];
 
   return (

@@ -9,9 +9,11 @@ import {
   isContactStatus,
 } from "@/features/contacts/types/contact-status";
 import {
+  findContactByNormalizedPhone,
   getPrismaErrorCode,
   toDecimalId,
 } from "@/features/contacts/services/contact-api.service";
+import { normalizePhoneNumber } from "@/features/contacts/services/contact-normalization";
 
 type ActionResult = { success: false; error: string };
 
@@ -28,7 +30,7 @@ export async function createContact(
   estado = DEFAULT_CONTACT_STATUS,
 ): Promise<ActionResult> {
   const nombreTrim = nombre.trim();
-  const telefonoTrim = telefono.trim();
+  const telefonoTrim = normalizePhoneNumber(telefono);
   const emailTrim = email.trim();
   const comentarioTrim = comentario.trim();
   const inmuebleIdTrim = inmuebleId.trim();
@@ -43,7 +45,7 @@ export async function createContact(
     return { success: false, error: "El nombre no puede superar 100 caracteres." };
   }
   if (telefonoTrim.length > 20) {
-    return { success: false, error: "El teléfono no puede superar 20 caracteres." };
+    return { success: false, error: "El teléfono no puede superar 20 dígitos." };
   }
   if (emailTrim.length > 150) {
     return { success: false, error: "El correo no puede superar 150 caracteres." };
@@ -77,6 +79,12 @@ export async function createContact(
         success: false,
         error: "La propiedad seleccionada ya no existe o no está activa.",
       };
+    }
+
+    const existingContact = await findContactByNormalizedPhone(telefonoTrim);
+
+    if (existingContact) {
+      return { success: false, error: "Ya existe un contacto registrado con ese teléfono." };
     }
 
     const contact = await prisma.$transaction(async (tx) => {
