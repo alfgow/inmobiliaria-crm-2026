@@ -580,6 +580,7 @@ export function NewPropertyForm({ statuses, advisors, mapboxToken }: NewProperty
   // Step 3 – Características
   const [rooms, setRooms] = useState(0);
   const [baths, setBaths] = useState(0);
+  const [bathroomModality, setBathroomModality] = useState("");
   const [parkings, setParkings] = useState(0);
   const [metrosCuadrados, setMetrosCuadrados] = useState("");
   const [superficieConstruida, setSuperficieConstruida] = useState("");
@@ -708,6 +709,7 @@ export function NewPropertyForm({ statuses, advisors, mapboxToken }: NewProperty
         estatus_id: selectedStatusId,
         habitaciones: rooms,
         banos: baths,
+        banos_modalidad: bathroomModality || null,
         estacionamientos: parkings,
         metros_cuadrados: metrosCuadrados ? parseFloat(metrosCuadrados) : null,
         superficie_construida: superficieConstruida ? parseFloat(superficieConstruida) : null,
@@ -895,9 +897,20 @@ export function NewPropertyForm({ statuses, advisors, mapboxToken }: NewProperty
             {/* 3 · Características */}
             {step === 3 && (
               <Pad>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <Stepper label="Habitaciones" value={rooms} onChange={setRooms} max={20} />
                   <Stepper label="Baños" value={baths} onChange={setBaths} max={20} step={0.5} />
+                  <Field label="Modalidad de baños">
+                    <select
+                      value={bathroomModality}
+                      onChange={(e) => setBathroomModality(e.target.value)}
+                      className={selectBase}
+                    >
+                      <option value="">Selecciona una modalidad</option>
+                      <option value="compartido">Compartido</option>
+                      <option value="privado">Privado</option>
+                    </select>
+                  </Field>
                   <Stepper label="Estacionamientos" value={parkings} onChange={setParkings} max={20} />
                 </div>
                 <Sep />

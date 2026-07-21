@@ -175,6 +175,7 @@ model inmuebles {
   estatus_id               Int                                @default(1) @db.SmallInt
   habitaciones             Int?                               @default(0) @db.SmallInt
   banos                    Int?                               @default(0) @db.SmallInt
+  banos_modalidad          String?                            @db.VarChar(20)
   estacionamientos         Int?                               @default(0) @db.SmallInt
   metros_cuadrados         Decimal?                           @default(0.00) @db.Decimal(10, 2)
   superficie_construida    Decimal?                           @default(0.00) @db.Decimal(10, 2)

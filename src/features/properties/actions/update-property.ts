@@ -13,6 +13,7 @@ export interface PropertyUpdateData {
   estatus_id: number;
   habitaciones: number;
   banos: number;
+  banos_modalidad: string | null;
   estacionamientos: number;
   metros_cuadrados: number | null;
   superficie_construida: number | null;
@@ -57,6 +58,7 @@ export async function updateProperty(
         estatus_id: data.estatus_id,
         habitaciones: data.habitaciones,
         banos: data.banos,
+        banos_modalidad: data.banos_modalidad,
         estacionamientos: data.estacionamientos,
         metros_cuadrados: data.metros_cuadrados,
         superficie_construida: data.superficie_construida,

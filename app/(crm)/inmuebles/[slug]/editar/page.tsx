@@ -28,6 +28,7 @@ export default async function PropertyEditPage({ params }: PageProps) {
         precio: true,
         habitaciones: true,
         banos: true,
+        banos_modalidad: true,
         estacionamientos: true,
         metros_cuadrados: true,
         superficie_construida: true,
@@ -132,6 +133,7 @@ export default async function PropertyEditPage({ params }: PageProps) {
     visible: property.visible,
     habitaciones: property.habitaciones ?? 0,
     banos: property.banos ?? 0,
+    banos_modalidad: property.banos_modalidad ?? "",
     estacionamientos: property.estacionamientos ?? 0,
     metros_cuadrados: property.metros_cuadrados
       ? Number(property.metros_cuadrados.toString()).toString()

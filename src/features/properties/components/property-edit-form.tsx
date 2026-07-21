@@ -113,6 +113,7 @@ export interface PropertyEditFormProps {
     visible: boolean;
     habitaciones: number;
     banos: number;
+    banos_modalidad: string;
     estacionamientos: number;
     metros_cuadrados: string;
     superficie_construida: string;
@@ -515,6 +516,7 @@ export function PropertyEditForm({
 
   const [habitaciones, setHabitaciones] = useState(initialData.habitaciones);
   const [banos, setBanos] = useState(initialData.banos);
+  const [banosModalidad, setBanosModalidad] = useState(initialData.banos_modalidad);
   const [estacionamientos, setEstacionamientos] = useState(initialData.estacionamientos);
   const [metrosCuadrados, setMetrosCuadrados] = useState(initialData.metros_cuadrados);
   const [superficieConstruida, setSuperficieConstruida] = useState(
@@ -596,6 +598,7 @@ export function PropertyEditForm({
       visible,
       habitaciones,
       banos,
+      banos_modalidad: banosModalidad || null,
       estacionamientos,
       metros_cuadrados: metrosCuadrados ? parseFloat(metrosCuadrados) : null,
       superficie_construida: superficieConstruida ? parseFloat(superficieConstruida) : null,
@@ -854,6 +857,18 @@ export function PropertyEditForm({
                 max={20}
                 step={0.5}
               />
+              <div>
+                <FieldLabel label="Modalidad de baños" />
+                <select
+                  value={banosModalidad}
+                  onChange={(e) => setBanosModalidad(e.target.value)}
+                  className={inputCls}
+                >
+                  <option value="">Selecciona una modalidad</option>
+                  <option value="compartido">Compartido</option>
+                  <option value="privado">Privado</option>
+                </select>
+              </div>
               <Stepper
                 label="Estacionamientos"
                 value={estacionamientos}
