@@ -13,6 +13,7 @@ export interface PropertyCreateData {
   estatus_id: number;
   habitaciones: number;
   banos: number;
+  banos_modalidad: string | null;
   estacionamientos: number;
   metros_cuadrados: number | null;
   superficie_construida: number | null;
@@ -71,7 +72,7 @@ export async function createProperty(
         titulo, slug, destacado, descripcion, precio,
         direccion, latitud, longitud, colonia, municipio, estado, codigo_postal,
         tipo, operacion, estatus_id,
-        habitaciones, banos, estacionamientos,
+        habitaciones, banos, banos_modalidad, estacionamientos,
         metros_cuadrados, superficie_construida, superficie_terreno, anio_construccion,
         video_url, tour_virtual_url,
         amenidades, tags, requisitos_restricciones,
@@ -82,7 +83,7 @@ export async function createProperty(
         ${data.colonia}, ${data.municipio}, ${data.estado}, ${data.codigo_postal},
         ${data.tipo}::inmuebles_tipo, ${data.operacion}::inmuebles_operacion,
         ${data.estatus_id},
-        ${data.habitaciones}, ${data.banos}, ${data.estacionamientos},
+        ${data.habitaciones}, ${data.banos}, ${data.banos_modalidad}, ${data.estacionamientos},
         ${data.metros_cuadrados}, ${data.superficie_construida}, ${data.superficie_terreno},
         ${data.anio_construccion},
         ${data.video_url}, ${data.tour_virtual_url},
