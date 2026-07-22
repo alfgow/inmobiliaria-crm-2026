@@ -5,7 +5,10 @@ import {
   type ContactStatus,
   isContactStatus,
 } from "@/features/contacts/types/contact-status";
-import { normalizePhoneNumber } from "@/features/contacts/services/contact-normalization";
+import {
+  escapeLikePattern,
+  normalizePhoneNumber,
+} from "@/features/contacts/services/contact-normalization";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -680,17 +683,116 @@ export async function findContactByNormalizedPhone(
     return null;
   }
 
-  const contacts = await prisma.contactos.findMany({
+  return prisma.contactos.findFirst({
+    where: {
+      telefono: normalizedPhone,
+      ...(excludeContactId !== undefined ? { id: { not: excludeContactId } } : {}),
+    },
     select: { id: true, telefono: true },
   });
+}
 
-  return (
-    contacts.find(
-      (contact) =>
-        contact.id !== excludeContactId &&
-        normalizePhoneNumber(contact.telefono) === normalizedPhone,
-    ) ?? null
-  );
+export type ContactSearchOptions = {
+  query?: string;
+  fuente?: string;
+  estado?: ContactStatus;
+  limit: number;
+  offset: number;
+};
+
+type RawContactSearchRow = {
+  id: bigint;
+  nombre: string;
+  email: string | null;
+  telefono: string;
+  estado: string;
+  fuente: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+  total_count: bigint;
+};
+
+export async function searchContactsWithCount(
+  options: ContactSearchOptions,
+): Promise<{ contacts: ContactRecord[]; total: number }> {
+  const trimmedQuery = (options.query ?? "").trim().replace(/\s+/g, " ");
+  const limit = Math.max(1, Math.trunc(options.limit));
+  const offset = Math.max(0, Math.trunc(options.offset));
+
+  const conditions: Prisma.Sql[] = [];
+
+  if (trimmedQuery.length > 0) {
+    const likePattern = `%${escapeLikePattern(trimmedQuery)}%`;
+    const phoneDigits = normalizePhoneNumber(trimmedQuery);
+
+    const textConditions: Prisma.Sql[] = [
+      Prisma.sql`lower(public.unaccent(c.nombre)) LIKE lower(public.unaccent(${likePattern})) ESCAPE '\'`,
+      Prisma.sql`(c.email IS NOT NULL AND lower(public.unaccent(c.email)) LIKE lower(public.unaccent(${likePattern})) ESCAPE '\')`,
+    ];
+
+    if (phoneDigits.length > 0) {
+      textConditions.push(Prisma.sql`c.telefono LIKE ${`%${phoneDigits}%`}`);
+    }
+
+    conditions.push(Prisma.sql`(${Prisma.join(textConditions, " OR ")})`);
+  }
+
+  if (options.fuente) {
+    conditions.push(Prisma.sql`lower(c.fuente) = lower(${options.fuente})`);
+  }
+
+  if (options.estado) {
+    conditions.push(
+      Prisma.sql`c.estado = ${options.estado}::dbs14813645.contactos_estado`,
+    );
+  }
+
+  const whereClause =
+    conditions.length > 0
+      ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}`
+      : Prisma.empty;
+
+  const rows = await prisma.$queryRaw<RawContactSearchRow[]>(Prisma.sql`
+    SELECT
+      c.id,
+      c.nombre,
+      c.email,
+      c.telefono,
+      c.estado::text AS estado,
+      c.fuente,
+      c.created_at,
+      c.updated_at,
+      COUNT(*) OVER()::bigint AS total_count
+    FROM public.contactos c
+    ${whereClause}
+    ORDER BY c.created_at DESC, c.id DESC
+    LIMIT ${limit}
+    OFFSET ${offset}
+  `);
+
+  let total = rows.length > 0 ? Number(rows[0].total_count) : 0;
+
+  if (rows.length === 0 && offset > 0) {
+    const countRows = await prisma.$queryRaw<Array<{ total_count: bigint }>>(Prisma.sql`
+      SELECT COUNT(*)::bigint AS total_count
+      FROM public.contactos c
+      ${whereClause}
+    `);
+    total = Number(countRows[0]?.total_count ?? BigInt(0));
+  }
+
+  const contacts: ContactRecord[] = rows.map((row) => ({
+    id: row.id,
+    nombre: row.nombre,
+    email: row.email,
+    telefono: row.telefono,
+    estado: row.estado as ContactStatus,
+    fuente: row.fuente,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }));
+
+  return { contacts, total };
 }
 
 export async function propertyExists(propertyId: bigint) {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { Prisma } from "../../../generated/prisma/client";
 import { authenticateApiRequest } from "@/lib/api-auth";
 import { isDatabaseUnavailableError } from "@/lib/prisma-error";
 import { prisma } from "@/lib/prisma";
@@ -13,11 +12,11 @@ import {
   parseCreateContactPayload,
   parsePositiveInt,
   readJsonBody,
+  searchContactsWithCount,
   serializeContact,
   toDecimalId,
 } from "@/features/contacts/services/contact-api.service";
-import { contactMatchesSearch } from "@/features/contacts/services/contact-normalization";
-import { isContactStatus } from "@/features/contacts/types/contact-status";
+import { isContactStatus, type ContactStatus } from "@/features/contacts/types/contact-status";
 
 export const dynamic = "force-dynamic";
 
@@ -34,41 +33,25 @@ export async function GET(request: NextRequest) {
   const query = searchParams.get("q")?.trim() ?? "";
   const fuente = searchParams.get("fuente")?.trim() ?? "";
   const estado = searchParams.get("estado")?.trim().toLowerCase() ?? "";
-  const where: Prisma.contactosWhereInput = {};
 
-  if (fuente) {
-    where.fuente = { equals: fuente, mode: "insensitive" };
-  }
-
-  if (estado) {
-    if (!isContactStatus(estado)) {
-      return NextResponse.json(
-        { error: "estado debe ser uno de: nuevo, en_contacto, rechazado, bloqueado." },
-        { status: 400 },
-      );
-    }
-
-    where.estado = estado;
+  if (estado && !isContactStatus(estado)) {
+    return NextResponse.json(
+      { error: "estado debe ser uno de: nuevo, en_contacto, rechazado, bloqueado." },
+      { status: 400 },
+    );
   }
 
   try {
-    const contacts = await prisma.contactos.findMany({
-      where,
-      orderBy: { created_at: "desc" },
-      select: contactSelect,
+    const { contacts, total } = await searchContactsWithCount({
+      query: query.length >= 2 ? query : undefined,
+      fuente: fuente || undefined,
+      estado: estado ? (estado as ContactStatus) : undefined,
+      limit: perPage,
+      offset: (page - 1) * perPage,
     });
-    const filteredContacts =
-      query.length >= 2
-        ? contacts.filter((contact) => contactMatchesSearch(contact, query))
-        : contacts;
-    const total = filteredContacts.length;
-    const paginatedContacts = filteredContacts.slice(
-      (page - 1) * perPage,
-      page * perPage,
-    );
 
     return NextResponse.json({
-      data: paginatedContacts.map((contact) => serializeContact(contact)),
+      data: contacts.map((contact) => serializeContact(contact)),
       meta: {
         page,
         perPage,

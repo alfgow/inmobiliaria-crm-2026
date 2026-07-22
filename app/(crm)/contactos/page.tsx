@@ -3,12 +3,12 @@ import { Search } from "lucide-react";
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import { ContactsSearchInput } from "@/features/contacts/components/contacts-search-input";
-import { contactMatchesSearch } from "@/features/contacts/services/contact-normalization";
+import { searchContactsWithCount } from "@/features/contacts/services/contact-api.service";
 import {
   contactStatusBadgeClass,
   getContactStatusLabel,
 } from "@/features/contacts/types/contact-status";
-import { prisma } from "@/lib/prisma";
+import { isDatabaseUnavailableError } from "@/lib/prisma-error";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +49,18 @@ function sourceBadgeCls(fuente: string | null) {
   }
 }
 
+async function searchContacts(query: string) {
+  try {
+    const { contacts } = await searchContactsWithCount({ query, limit: 60, offset: 0 });
+    return { contacts, databaseUnavailable: false };
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) {
+      throw error;
+    }
+    return { contacts: [], databaseUnavailable: true };
+  }
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 type PageProps = { searchParams: Promise<{ q?: string }> };
@@ -58,24 +70,9 @@ export default async function ContactsPage({ searchParams }: PageProps) {
   const query = q?.trim() ?? "";
   const hasQuery = query.length >= 2;
 
-  const contacts = hasQuery
-    ? (
-        await prisma.contactos.findMany({
-          orderBy: { created_at: "desc" },
-          select: {
-            id: true,
-            nombre: true,
-            email: true,
-            telefono: true,
-            estado: true,
-            fuente: true,
-            created_at: true,
-          },
-        })
-      )
-        .filter((contact) => contactMatchesSearch(contact, query))
-        .slice(0, 60)
-    : [];
+  const { contacts, databaseUnavailable } = hasQuery
+    ? await searchContacts(query)
+    : { contacts: [], databaseUnavailable: false };
 
   return (
     <main className="relative isolate min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-brand-base px-4 py-8 text-brand-text sm:px-6 lg:px-10">
@@ -110,7 +107,7 @@ export default async function ContactsPage({ searchParams }: PageProps) {
             {/* Hint */}
             <p className="mt-3 text-center text-xs text-brand-text/35">
               {hasQuery
-                ? contacts.length === 0
+                ? databaseUnavailable || contacts.length === 0
                   ? null
                   : `${contacts.length} resultado${contacts.length !== 1 ? "s" : ""} para "${query}"`
                 : "Busca por nombre, teléfono o correo electrónico"}
@@ -118,7 +115,12 @@ export default async function ContactsPage({ searchParams }: PageProps) {
           </div>
 
           {/* ── Results ── */}
-          {hasQuery ? (
+          {databaseUnavailable ? (
+            <section className="w-full max-w-2xl rounded-[1.5rem] border border-amber-200 bg-amber-50 px-5 py-4 text-center text-sm text-amber-900 shadow-[0_18px_45px_rgba(15,23,42,0.06)]">
+              La base de datos no responde en este momento. Verifica PostgreSQL
+              o `DATABASE_URL` e intenta buscar de nuevo.
+            </section>
+          ) : hasQuery ? (
             contacts.length > 0 ? (
               <div className="w-full">
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

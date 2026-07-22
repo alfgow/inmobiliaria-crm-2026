@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
 import { isDatabaseUnavailableError } from "@/lib/prisma-error";
 import type { ContactStatus } from "@/features/contacts/types/contact-status";
-import { contactMatchesSearch } from "@/features/contacts/services/contact-normalization";
+import { searchContactsWithCount } from "@/features/contacts/services/contact-api.service";
 
 export const dynamic = "force-dynamic";
 
@@ -49,17 +48,14 @@ export async function GET(request: Request) {
   }
 
   try {
-    const contacts = await prisma.contactos.findMany({
-      orderBy: {
-        created_at: "desc",
-      },
+    const { contacts } = await searchContactsWithCount({
+      query: rawQuery,
+      limit: 5,
+      offset: 0,
     });
-    const results = contacts
-      .filter((contact) => contactMatchesSearch(contact, rawQuery))
-      .slice(0, 5);
 
     return NextResponse.json({
-      results: results.map(normalizeContact),
+      results: contacts.map(normalizeContact),
     });
   } catch (error) {
     if (isDatabaseUnavailableError(error)) {
