@@ -20,6 +20,7 @@ import { ContactInterestsCard } from "@/features/contacts/components/contact-int
 import { DeleteContactButton } from "@/features/contacts/components/delete-contact-button";
 import {
   getContactStatusLabel,
+  isContactStatus,
 } from "@/features/contacts/types/contact-status";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "../../../generated/prisma/client";
@@ -303,7 +304,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                   </span>
                   <ContactStatusSelect
                     contactId={contact.id.toString()}
-                    currentStatus={contact.estado}
+                    currentStatus={isContactStatus(contact.estado) ? contact.estado : "nuevo"}
                   />
                   <span className="rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm text-white/90">
                     {formatDate(lastActivity)}
@@ -324,7 +325,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                       Estado actual
                     </p>
                     <p className="mt-1 text-lg font-semibold text-white">
-                      {getContactStatusLabel(contact.estado)}
+                      {getContactStatusLabel(isContactStatus(contact.estado) ? contact.estado : null)}
                     </p>
                   </div>
                 </div>
@@ -386,7 +387,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
                   { label: "Origen", value: contact.fuente ?? "Sin fuente", icon: Sparkles },
                   {
                     label: "Estado",
-                    value: getContactStatusLabel(contact.estado),
+                    value: getContactStatusLabel(isContactStatus(contact.estado) ? contact.estado : null),
                     icon: UserRound,
                   },
                   {

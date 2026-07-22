@@ -58,7 +58,7 @@ export async function updateProperty(
         estatus_id: data.estatus_id,
         habitaciones: data.habitaciones,
         banos: data.banos,
-        banos_modalidad: data.banos_modalidad,
+        banos_modalidad: data.banos_modalidad ?? undefined,
         estacionamientos: data.estacionamientos,
         metros_cuadrados: data.metros_cuadrados,
         superficie_construida: data.superficie_construida,

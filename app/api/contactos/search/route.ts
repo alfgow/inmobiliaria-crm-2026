@@ -11,7 +11,7 @@ type SearchResult = {
   nombre: string;
   email: string | null;
   telefono: string;
-  estado: ContactStatus;
+  estado: ContactStatus | null;
   fuente: string | null;
   createdAt: string | null;
 };
@@ -21,7 +21,7 @@ function normalizeContact(contact: {
   nombre: string;
   email: string | null;
   telefono: string;
-  estado: ContactStatus;
+  estado: ContactStatus | null;
   fuente: string | null;
   created_at: Date | null;
 }): SearchResult {

@@ -21,7 +21,7 @@ type ContactRecord = {
   nombre: string;
   email: string | null;
   telefono: string;
-  estado: ContactStatus;
+  estado: ContactStatus | null;
   fuente: string | null;
   created_at: Date | null;
   updated_at: Date | null;
@@ -609,12 +609,15 @@ export async function fetchContactDetail(contactId: bigint) {
     interests.map((interest) => interest.inmueble_id.toString()),
   );
 
-  return serializeContact(contact, {
-    intereses: interests.map((interest) =>
-      serializeInterest(interest, propertyMap.get(interest.inmueble_id.toString()) ?? null),
-    ),
-    comentarios: comments.map(serializeComment),
-  });
+  return serializeContact(
+    { ...contact, estado: isContactStatus(contact.estado) ? contact.estado : null },
+    {
+      intereses: interests.map((interest) =>
+        serializeInterest(interest, propertyMap.get(interest.inmueble_id.toString()) ?? null),
+      ),
+      comentarios: comments.map(serializeComment),
+    },
+  );
 }
 
 export async function fetchContactInterests(contactId: bigint) {

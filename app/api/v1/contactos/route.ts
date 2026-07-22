@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
     const detail = await fetchContactDetail(contact.id);
 
     return NextResponse.json(
-      { data: detail ?? serializeContact(contact) },
+      { data: detail ?? serializeContact({ ...contact, estado: isContactStatus(contact.estado) ? contact.estado : null }) },
       { status: 201 },
     );
   } catch (error) {
