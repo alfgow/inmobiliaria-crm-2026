@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { isBotStatus } from "@/features/contacts/types/bot-status";
 
 export async function updateBotStatus(
-  conversacionId: string,
+  waId: string,
   nuevoEstado: string,
   contactoId: string,
 ): Promise<{ success: true } | { success: false; error: string }> {
@@ -13,17 +13,14 @@ export async function updateBotStatus(
     return { success: false, error: "Estado inválido." };
   }
 
-  let id: bigint;
-  try {
-    id = BigInt(conversacionId);
-  } catch {
-    return { success: false, error: "ID de conversación inválido." };
+  if (!waId) {
+    return { success: false, error: "wa_id inválido." };
   }
 
   try {
-    await prisma.contacto_conversaciones.update({
-      where: { id },
-      data: { estado_bot: nuevoEstado, updated_at: new Date() },
+    await prisma.regina_contextos.update({
+      where: { wa_id: waId },
+      data: { status: nuevoEstado, updated_at: new Date() },
     });
 
     revalidatePath(`/contactos/${contactoId}`);

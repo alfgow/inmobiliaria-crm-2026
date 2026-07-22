@@ -27,16 +27,12 @@ const BOT_STATUS_DOT: Record<BotStatus, string> = {
 };
 
 type Props = {
-  conversacionId: string;
+  waId: string;
   contactoId: string;
   currentStatus: string;
 };
 
-export function BotStatusSelect({
-  conversacionId,
-  contactoId,
-  currentStatus,
-}: Props) {
+export function BotStatusSelect({ waId, contactoId, currentStatus }: Props) {
   const [status, setStatus] = useState<BotStatus>(
     isBotStatus(currentStatus) ? currentStatus : "activo",
   );
@@ -51,7 +47,7 @@ export function BotStatusSelect({
     setError(null);
 
     startTransition(async () => {
-      const result = await updateBotStatus(conversacionId, value, contactoId);
+      const result = await updateBotStatus(waId, value, contactoId);
       if (!result.success) {
         setStatus(prev);
         setError(result.error);

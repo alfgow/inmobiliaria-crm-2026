@@ -150,6 +150,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
       include: {
         inmuebles: { select: { id: true, titulo: true, slug: true } },
         contacto_mensajes: { orderBy: { enviado_at: "asc" } },
+        regina_contextos: { select: { status: true } },
       },
     }),
     prisma.intereses.count({
@@ -514,11 +515,11 @@ export default async function ContactDetailPage({ params }: PageProps) {
                           )}
                         </div>
 
-                        {/* Estado del bot */}
+                        {/* Estado del bot en regina_contextos */}
                         <BotStatusSelect
-                          conversacionId={conv.id.toString()}
+                          waId={conv.wa_id}
                           contactoId={id}
-                          currentStatus={conv.estado_bot}
+                          currentStatus={conv.regina_contextos?.status ?? "activo"}
                         />
                       </div>
 
