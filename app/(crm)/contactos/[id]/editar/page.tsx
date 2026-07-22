@@ -80,7 +80,7 @@ export default async function EditContactPage({ params }: PageProps) {
               nombre: contact.nombre,
               telefono: contact.telefono,
               email: contact.email,
-              estado: contact.estado,
+              estado: contact.estado ?? "nuevo",
               fuente: contact.fuente,
             }}
           />
