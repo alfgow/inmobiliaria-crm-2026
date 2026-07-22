@@ -160,6 +160,9 @@ model regina_contextos {
   historial                     Json?     @default("[]")
   updated_at                    DateTime? @default(now()) @db.Timestamp(6)
   referencia_inmueble_pendiente String?
+  resumen_contexto              Json?
+  resumen_generado_at           DateTime? @db.Timestamptz(6)
+  resumen_version               String?   @db.VarChar(30)
   contacto_conversaciones       contacto_conversaciones?
 
   @@schema("public")
