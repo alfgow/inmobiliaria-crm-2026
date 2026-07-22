@@ -105,13 +105,29 @@ model contacto_conversaciones {
   ultimo_mensaje_at DateTime?         @db.Timestamptz(6)
   created_at        DateTime          @default(now()) @db.Timestamptz(6)
   updated_at        DateTime          @default(now()) @db.Timestamptz(6)
-  contactos         contactos         @relation(fields: [contacto_id], references: [id], onUpdate: NoAction, map: "contacto_conversaciones_contacto_fk")
-  regina_contextos  regina_contextos  @relation(fields: [wa_id], references: [wa_id], onUpdate: NoAction, map: "contacto_conversaciones_contexto_fk")
-  inmuebles         inmuebles?        @relation(fields: [inmueble_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "contacto_conversaciones_inmueble_fk")
+  contactos             contactos               @relation(fields: [contacto_id], references: [id], onUpdate: NoAction, map: "contacto_conversaciones_contacto_fk")
+  regina_contextos      regina_contextos        @relation(fields: [wa_id], references: [wa_id], onUpdate: NoAction, map: "contacto_conversaciones_contexto_fk")
+  inmuebles             inmuebles?              @relation(fields: [inmueble_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "contacto_conversaciones_inmueble_fk")
+  contacto_mensajes     contacto_mensajes[]
 
   @@index([contacto_id], map: "idx_contacto_conversaciones_contacto")
   @@index([estado_bot], map: "idx_contacto_conversaciones_estado_bot")
   @@index([inmueble_id], map: "idx_contacto_conversaciones_inmueble")
+  @@schema("public")
+}
+
+model contacto_mensajes {
+  id               BigInt                  @id @default(autoincrement())
+  conversacion_id  BigInt
+  message_id       String?                 @unique(map: "contacto_mensajes_message_id_unique")
+  rol              String                  @db.VarChar(20)
+  mensaje          String
+  enviado_at       DateTime                @default(now()) @db.Timestamptz(6)
+  created_at       DateTime                @default(now()) @db.Timestamptz(6)
+  contacto_conversaciones contacto_conversaciones @relation(fields: [conversacion_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "contacto_mensajes_conversacion_fk")
+
+  @@index([conversacion_id], map: "idx_contacto_mensajes_conversacion")
+  @@index([enviado_at], map: "idx_contacto_mensajes_enviado_at")
   @@schema("public")
 }
 
