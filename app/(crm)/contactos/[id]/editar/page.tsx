@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import { prisma } from "@/lib/prisma";
 import { EditContactForm } from "@/features/contacts/components/edit-contact-form";
+import { isContactStatus } from "@/features/contacts/types/contact-status";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +81,7 @@ export default async function EditContactPage({ params }: PageProps) {
               nombre: contact.nombre,
               telefono: contact.telefono,
               email: contact.email,
-              estado: contact.estado ?? "nuevo",
+              estado: isContactStatus(contact.estado) ? contact.estado : "nuevo",
               fuente: contact.fuente,
             }}
           />
