@@ -15,8 +15,10 @@ import { notFound } from "next/navigation";
 
 import { AnimatedDashboardBackground } from "@/components/dashboard/animated-dashboard-background";
 import { AddCommentButton } from "@/features/contacts/components/add-comment-button";
+import { BotStatusSelect } from "@/features/contacts/components/bot-status-select";
 import { ContactStatusSelect } from "@/features/contacts/components/contact-status-select";
 import { ContactInterestsCard } from "@/features/contacts/components/contact-interests-card";
+import { ConversationMessages } from "@/features/contacts/components/conversation-messages";
 import { DeleteContactButton } from "@/features/contacts/components/delete-contact-button";
 import {
   getContactStatusLabel,
@@ -94,6 +96,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
     interests,
     comments,
     interactionsIa,
+    conversaciones,
     totalInterests,
     totalComments,
     totalIaInteractions,
@@ -139,6 +142,14 @@ export default async function ContactDetailPage({ params }: PageProps) {
         id: true,
         payload: true,
         created_at: true,
+      },
+    }),
+    prisma.contacto_conversaciones.findMany({
+      where: { contacto_id: contactId },
+      orderBy: { iniciada_at: "desc" },
+      include: {
+        inmuebles: { select: { id: true, titulo: true, slug: true } },
+        contacto_mensajes: { orderBy: { enviado_at: "asc" } },
       },
     }),
     prisma.intereses.count({
@@ -438,6 +449,115 @@ export default async function ContactDetailPage({ params }: PageProps) {
                 ))}
               </div>
             </div>
+
+            {/* ── Conversaciones del bot ── */}
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-950 text-white">
+                  <Bot className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-[0.15em] sm:tracking-[0.35em] text-slate-500">
+                    Bot WhatsApp
+                  </p>
+                  <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
+                    Conversaciones
+                  </h2>
+                </div>
+                <span className="ml-auto rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
+                  {conversaciones.length}{" "}
+                  {conversaciones.length === 1 ? "conversación" : "conversaciones"}
+                </span>
+              </div>
+
+              <div className="mt-6 space-y-5">
+                {conversaciones.length === 0 ? (
+                  <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-sm text-slate-500">
+                    No hay conversaciones con el bot registradas.
+                  </div>
+                ) : (
+                  conversaciones.map((conv) => (
+                    <div
+                      key={conv.id.toString()}
+                      className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5"
+                    >
+                      {/* Cabecera de la conversación */}
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* Canal */}
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#25D366]/30 bg-[#25D366]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#128C3F]">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                              className="h-3 w-3"
+                              aria-hidden="true"
+                            >
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                            </svg>
+                            {conv.canal}
+                          </span>
+
+                          {/* ID de WhatsApp */}
+                          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 font-mono text-xs text-slate-600">
+                            {conv.wa_id}
+                          </span>
+
+                          {/* Inmueble vinculado */}
+                          {conv.inmuebles && (
+                            <Link
+                              href={`/inmuebles/${conv.inmuebles.slug}`}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 transition hover:bg-sky-100"
+                            >
+                              <Sparkles className="h-3 w-3" />
+                              {conv.inmuebles.titulo}
+                            </Link>
+                          )}
+                        </div>
+
+                        {/* Estado del bot */}
+                        <BotStatusSelect
+                          conversacionId={conv.id.toString()}
+                          contactoId={id}
+                          currentStatus={conv.estado_bot}
+                        />
+                      </div>
+
+                      {/* Fechas */}
+                      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
+                        <span>
+                          <span className="font-medium text-slate-700">Iniciada:</span>{" "}
+                          {formatDate(conv.iniciada_at)}
+                        </span>
+                        {conv.ultimo_mensaje_at && (
+                          <span>
+                            <span className="font-medium text-slate-700">
+                              Último mensaje:
+                            </span>{" "}
+                            {formatDate(conv.ultimo_mensaje_at)}
+                          </span>
+                        )}
+                        <span>
+                          <span className="font-medium text-slate-700">Mensajes:</span>{" "}
+                          {conv.contacto_mensajes.length}
+                        </span>
+                      </div>
+
+                      {/* Mensajes */}
+                      <div className="mt-4">
+                        <ConversationMessages
+                          messages={conv.contacto_mensajes.map((m) => ({
+                            id: m.id.toString(),
+                            rol: m.rol,
+                            mensaje: m.mensaje,
+                            enviado_at: m.enviado_at.toISOString(),
+                          }))}
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </section>
 
             <ContactInterestsCard
               contactId={contact.id.toString()}
