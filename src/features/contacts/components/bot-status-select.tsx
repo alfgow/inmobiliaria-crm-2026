@@ -5,8 +5,8 @@ import {
   BOT_STATUS_VALUES,
   type BotStatus,
   isBotStatus,
-  updateBotStatus,
-} from "../actions/updateBotStatus";
+} from "@/features/contacts/types/bot-status";
+import { updateBotStatus } from "../actions/updateBotStatus";
 
 const BOT_STATUS_LABELS: Record<BotStatus, string> = {
   activo: "Bot activo",

@@ -2,16 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-
-export const BOT_STATUS_VALUES = ["activo", "pausado", "finalizado"] as const;
-export type BotStatus = (typeof BOT_STATUS_VALUES)[number];
-
-export function isBotStatus(value: unknown): value is BotStatus {
-  return (
-    typeof value === "string" &&
-    (BOT_STATUS_VALUES as readonly string[]).includes(value)
-  );
-}
+import { isBotStatus } from "@/features/contacts/types/bot-status";
 
 export async function updateBotStatus(
   conversacionId: string,
