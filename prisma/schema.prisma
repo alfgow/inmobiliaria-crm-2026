@@ -12,8 +12,10 @@ datasource db {
 enum ContactStatus {
   nuevo
   en_contacto
+  en_contacto_bot
   rechazado
   bloqueado
+  blocked
 
   @@map("contactos_estado")
   @@schema("dbs14813645")
