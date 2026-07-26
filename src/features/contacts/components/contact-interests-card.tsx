@@ -164,7 +164,7 @@ export function ContactInterestsCard({
       )}
 
       {/* Interests list */}
-      <div className="mt-4 grid gap-4">
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
         {initialInterests.length > 0 ? (
           initialInterests.map(
             ({ interestId, titulo, direccion, precio, tipo, operacion, estatus, metros, createdAt, coverImageUrl }) => {
