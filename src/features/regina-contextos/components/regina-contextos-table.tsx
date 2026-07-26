@@ -213,7 +213,6 @@ export function ReginaContextosTable({ data }: Props) {
         id: "actions",
         header: "Acciones",
         cell: ({ row }) => (
-          // eslint-disable-next-line jsx-a11y/click-events-have-key-events
           <div onClick={(e) => e.stopPropagation()}>
             <DeleteReginaContextoButton
               waId={row.original.wa_id}
@@ -226,6 +225,8 @@ export function ReginaContextosTable({ data }: Props) {
     [],
   );
 
+  // TanStack Table returns methods that React Compiler cannot safely memoize.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
