@@ -1,6 +1,7 @@
 "use client";
 
 import { Building2, Plus, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { addInterest, removeInterest } from "../actions/intereses";
@@ -16,6 +17,7 @@ type InterestedProperty = {
   estatus: string;
   metros: string;
   createdAt: string | null;
+  coverImageUrl: string | null;
 };
 
 type AvailableProperty = {
@@ -165,7 +167,7 @@ export function ContactInterestsCard({
       <div className="mt-4 grid gap-4">
         {initialInterests.length > 0 ? (
           initialInterests.map(
-            ({ interestId, titulo, direccion, precio, tipo, operacion, estatus, metros, createdAt }) => {
+            ({ interestId, titulo, direccion, precio, tipo, operacion, estatus, metros, createdAt, coverImageUrl }) => {
               const isRemoving = removingId === interestId && isPending;
               const showTipo = tipo !== "—";
               const showOperacion = operacion !== "—";
@@ -181,10 +183,28 @@ export function ContactInterestsCard({
                     onClick={() => handleRemove(interestId)}
                     disabled={isPending}
                     aria-label="Eliminar interés"
-                    className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-xl border border-red-100 bg-white text-red-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-xl border border-red-100 bg-white text-red-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
+
+                  {/* Property cover image */}
+                  <div className="relative -mx-5 -mt-5 mb-4 h-40 overflow-hidden rounded-t-[1.5rem] bg-slate-200">
+                    {coverImageUrl ? (
+                      <Image
+                        src={coverImageUrl}
+                        alt={titulo}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 400px"
+                        unoptimized
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
+                        <Building2 className="h-10 w-10 text-slate-400" />
+                      </div>
+                    )}
+                  </div>
 
                   {/* Property info — right padding to avoid overlap with trash */}
                   <div className="space-y-2 pr-12">

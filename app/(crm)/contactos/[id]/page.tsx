@@ -25,6 +25,7 @@ import {
   isContactStatus,
 } from "@/features/contacts/types/contact-status";
 import { prisma } from "@/lib/prisma";
+import { getPublicImageUrl } from "@/lib/s3";
 import { Prisma } from "../../../generated/prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -196,6 +197,25 @@ export default async function ContactDetailPage({ params }: PageProps) {
   const propertyMap = new Map(
     properties.map((property) => [property.id.toString(), property]),
   );
+
+  const rawInterestImages =
+    propertyIds.length > 0
+      ? await prisma.inmueble_imagenes.findMany({
+          where: { inmueble_id: { in: propertyIds.map((id) => id.toString()) } },
+          orderBy: [{ orden: "asc" }, { id: "asc" }],
+          select: { inmueble_id: true, s3_key: true },
+        })
+      : [];
+
+  const seenInterestImageIds = new Set<string>();
+  const coverImageMap = new Map<string, string>();
+  for (const img of rawInterestImages) {
+    const key = img.inmueble_id.toString();
+    if (!seenInterestImageIds.has(key)) {
+      seenInterestImageIds.add(key);
+      coverImageMap.set(key, getPublicImageUrl(img.s3_key));
+    }
+  }
 
   const interestedProperties = interests
     .map((interest) => {
@@ -579,6 +599,8 @@ export default async function ContactDetailPage({ params }: PageProps) {
                     estatus: property.inmueble_estatus.nombre,
                     metros: property.metros_cuadrados?.toString() ?? "0",
                     createdAt: createdAt?.toISOString() ?? null,
+                    coverImageUrl:
+                      coverImageMap.get(property.id.toString()) ?? null,
                   };
                 },
               )}
