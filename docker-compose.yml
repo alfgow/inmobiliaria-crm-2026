@@ -1,5 +1,6 @@
 services:
   inmobiliaria-crm:
+    image: ${APP_IMAGE:-inmobiliaria-crm-2026:local}
     build:
       context: .
       dockerfile: Dockerfile
