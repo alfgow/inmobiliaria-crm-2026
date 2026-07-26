@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
+import { getAuthSecret } from "@/lib/auth-secret";
+
 const SESSION_COOKIE = "crm_session";
 const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout", "/api/v1"];
-
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET ?? "dev-secret-change-me-in-production"
-);
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -28,6 +26,8 @@ export async function proxy(req: NextRequest) {
   if (!token) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
+
+  const secret = getAuthSecret();
 
   try {
     await jwtVerify(token, secret);
