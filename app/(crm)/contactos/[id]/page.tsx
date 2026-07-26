@@ -312,7 +312,7 @@ export default async function ContactDetailPage({ params }: PageProps) {
               />
 
               <div className="hidden rounded-full border border-white/10 bg-zinc-950 px-4 py-2 text-xs font-medium uppercase tracking-[0.15em] sm:tracking-[0.3em] text-zinc-300 shadow-2xl sm:block">
-                Vista de contacto
+                Contacto
               </div>
             </div>
           </div>
