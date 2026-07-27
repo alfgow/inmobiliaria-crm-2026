@@ -47,5 +47,6 @@ Required GitHub repository secrets:
 - `DEPLOY_USER`: SSH user.
 - `DEPLOY_SSH_KEY`: private SSH key with access to the server.
 - `DEPLOY_PATH`: remote directory containing the production `.env`.
+- `TAILSCALE_AUTHKEY`: Tailscale auth key used by GitHub Actions to reach the private server IP.
 
 Production secrets stay in the server `.env`; they are not stored in GitHub Actions.
