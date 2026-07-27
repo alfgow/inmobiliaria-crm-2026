@@ -107,7 +107,7 @@ export function ContactInterestsCard({
   }
 
   return (
-    <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.08)] ">
+    <div className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_28px_70px_rgba(15,23,42,0.08)] sm:p-6">
       {/* Card header */}
       <div className="flex items-center gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-600 text-white">
@@ -175,10 +175,10 @@ export function ContactInterestsCard({
               return (
                 <div
                   key={interestId}
-                  className={`group relative flex gap-4 rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)] ${isRemoving ? "opacity-40" : ""}`}
+                  className={`group relative flex w-full min-w-0 gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-white p-3.5 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_16px_40px_rgba(15,23,42,0.08)] sm:gap-4 sm:p-4 ${isRemoving ? "opacity-40" : ""}`}
                 >
                   {/* Thumbnail */}
-                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:h-24 sm:w-24">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:h-24 sm:w-24">
                     {coverImageUrl ? (
                       <Image
                         src={coverImageUrl}
@@ -190,15 +190,15 @@ export function ContactInterestsCard({
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-                        <Building2 className="h-6 w-6 text-slate-400" />
+                        <Building2 className="h-5 w-5 text-slate-400 sm:h-6 sm:w-6" />
                       </div>
                     )}
                   </div>
 
                   {/* Property info */}
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 overflow-hidden">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         {(showTipo || showOperacion) && (
                           <div className="mb-1 flex flex-wrap items-center gap-1.5">
                             {showTipo && (
@@ -213,12 +213,12 @@ export function ContactInterestsCard({
                             )}
                           </div>
                         )}
-                        <h3 className="truncate text-base font-semibold text-slate-950">
+                        <h3 className="truncate text-sm font-semibold text-slate-950 sm:text-base">
                           {titulo}
                         </h3>
-                        <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-slate-500">
+                        <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-slate-500 sm:text-sm">
                           <MapPin className="h-3.5 w-3.5 shrink-0" />
-                          <span className="truncate">{direccion}</span>
+                          <span className="min-w-0 flex-1 truncate">{direccion}</span>
                         </p>
                       </div>
 
@@ -227,25 +227,25 @@ export function ContactInterestsCard({
                         onClick={() => handleRemove(interestId)}
                         disabled={isPending}
                         aria-label="Eliminar interés"
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-transparent text-slate-300 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-transparent text-slate-300 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 sm:h-8 sm:w-8"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
 
-                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                      <span className="text-base font-semibold text-slate-950">
+                    <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:mt-3 sm:gap-x-4">
+                      <span className="text-sm font-semibold text-slate-950 sm:text-base">
                         {formatMoney(precio)}
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                      <span className="max-w-[9rem] truncate rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 sm:text-xs">
                         {estatus}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-                        <Ruler className="h-3.5 w-3.5" />
+                      <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-slate-500 sm:text-xs">
+                        <Ruler className="h-3.5 w-3.5 shrink-0" />
                         {formatDimension(metros)}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                        <Clock3 className="h-3.5 w-3.5" />
+                      <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-slate-400 sm:text-xs">
+                        <Clock3 className="h-3.5 w-3.5 shrink-0" />
                         {formatDate(createdAt)}
                       </span>
                     </div>
