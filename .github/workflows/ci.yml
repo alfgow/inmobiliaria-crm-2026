@@ -17,7 +17,6 @@ jobs:
 
     env:
       NEXT_TELEMETRY_DISABLED: "1"
-      NODE_ENV: production
       DATABASE_URL: "postgresql://user:password@localhost:5432/inmobiliaria?schema=public"
       AUTH_SECRET: "ci-auth-secret"
       MAPBOX_TOKEN: "ci-mapbox-token"
