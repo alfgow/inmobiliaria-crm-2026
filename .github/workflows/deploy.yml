@@ -96,5 +96,6 @@ jobs:
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
           APP_IMAGE="$APP_IMAGE" docker compose pull inmobiliaria-crm
           APP_IMAGE="$APP_IMAGE" docker compose up -d --no-build inmobiliaria-crm
+          docker logout ghcr.io
           docker image prune -f
           EOF
