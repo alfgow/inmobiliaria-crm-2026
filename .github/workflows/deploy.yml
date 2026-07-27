@@ -91,4 +91,4 @@ jobs:
           APP_IMAGE="$APP_IMAGE" docker compose pull inmobiliaria-crm
           APP_IMAGE="$APP_IMAGE" docker compose up -d --no-build inmobiliaria-crm
           docker image prune -f
-EOF
+          EOF
