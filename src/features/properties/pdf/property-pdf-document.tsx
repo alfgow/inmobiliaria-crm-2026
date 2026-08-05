@@ -370,6 +370,8 @@ export function PropertyPdfDocument({ data }: { data: PropertyPdfData }) {
               {/* Row 1 */}
               <View style={{ flexDirection: "row", marginBottom: photoCount > 2 ? 5 : 0 }}>
                 {photos.slice(0, 2).map((src, i) => (
+                  // @react-pdf/renderer Image does not expose an alt prop.
+                  // eslint-disable-next-line jsx-a11y/alt-text
                   <Image
                     key={i}
                     src={src}
@@ -386,6 +388,8 @@ export function PropertyPdfDocument({ data }: { data: PropertyPdfData }) {
               {photoCount > 2 && (
                 <View style={{ flexDirection: "row" }}>
                   {photos.slice(2, 4).map((src, i) => (
+                    // @react-pdf/renderer Image does not expose an alt prop.
+                    // eslint-disable-next-line jsx-a11y/alt-text
                     <Image
                       key={i + 2}
                       src={src}

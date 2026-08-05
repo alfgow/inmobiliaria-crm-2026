@@ -34,3 +34,19 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## CI/CD
+
+GitHub Actions runs CI on pull requests and pushes to `main`.
+
+The production deploy workflow builds and pushes the Docker image to GitHub Container Registry, uploads `docker-compose.yml` to the server, and restarts the `inmobiliaria-crm` service with the new image.
+
+Required GitHub repository secrets:
+
+- `DEPLOY_HOST`: server hostname or IP.
+- `DEPLOY_USER`: SSH user.
+- `DEPLOY_SSH_KEY`: private SSH key with access to the server.
+- `DEPLOY_PATH`: remote directory containing the production `.env`.
+- `TAILSCALE_AUTHKEY`: Tailscale auth key used by GitHub Actions to reach the private server IP.
+
+Production secrets stay in the server `.env`; they are not stored in GitHub Actions.

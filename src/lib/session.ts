@@ -1,10 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
 
-export const SESSION_COOKIE = "crm_session";
+import { getAuthSecret } from "@/lib/auth-secret";
 
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET ?? "dev-secret-change-me-in-production"
-);
+export const SESSION_COOKIE = "crm_session";
 
 export interface SessionUser {
   id: string;
@@ -18,10 +16,12 @@ export async function signToken(user: SessionUser): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(secret);
+    .sign(getAuthSecret());
 }
 
 export async function verifyToken(token: string): Promise<SessionUser | null> {
+  const secret = getAuthSecret();
+
   try {
     const { payload } = await jwtVerify(token, secret);
     return payload as unknown as SessionUser;
