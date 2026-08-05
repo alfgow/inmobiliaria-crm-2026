@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, Loader2 } from "lucide-react";
 
-export function LogoutButton() {
+type LogoutButtonProps = {
+  variant?: "icon" | "full";
+};
+
+export function LogoutButton({ variant = "icon" }: LogoutButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -13,6 +17,22 @@ export function LogoutButton() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
     router.refresh();
+  }
+
+  if (variant === "full") {
+    return (
+      <button
+        type="button"
+        onClick={handleLogout}
+        disabled={loading}
+        className="flex w-full items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-100 disabled:pointer-events-none disabled:opacity-50"
+      >
+        <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-rose-200 bg-white text-rose-500">
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+        </span>
+        Cerrar sesión
+      </button>
+    );
   }
 
   return (

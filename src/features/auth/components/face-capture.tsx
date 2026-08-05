@@ -4,17 +4,27 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, Loader2, RotateCcw } from "lucide-react";
 
 const CAPTURE_SIZE = 480;
+const AUTO_CAPTURE_DELAY_MS = 1000;
 
 type FaceCaptureProps = {
   onCapture: (dataUrl: string) => void;
   busy?: boolean;
   captureLabel?: string;
+  /** Abre la camara sola al montar, sin esperar un click. */
+  autoStart?: boolean;
+  /** Captura sola una vez la camara esta lista (y de nuevo cada vez que retrySignal cambia). */
+  autoCapture?: boolean;
+  /** Incrementa este numero para forzar otro intento de captura automatica. */
+  retrySignal?: number;
 };
 
 export function FaceCapture({
   onCapture,
   busy = false,
   captureLabel = "Capturar rostro",
+  autoStart = false,
+  autoCapture = false,
+  retrySignal = 0,
 }: FaceCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -29,7 +39,7 @@ export function FaceCapture({
 
   useEffect(() => stopCamera, [stopCamera]);
 
-  async function startCamera() {
+  const startCamera = useCallback(async () => {
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -45,9 +55,17 @@ export function FaceCapture({
     } catch {
       setError("No se pudo acceder a la camara. Revisa los permisos del navegador.");
     }
-  }
+  }, []);
 
-  function capture() {
+  useEffect(() => {
+    if (!autoStart) return;
+
+    const timeoutId = window.setTimeout(startCamera, 0);
+    return () => window.clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const capture = useCallback(() => {
     const video = videoRef.current;
     if (!video || !video.videoWidth || !video.videoHeight) return;
 
@@ -63,7 +81,15 @@ export function FaceCapture({
     ctx.drawImage(video, sx, sy, size, size, 0, 0, CAPTURE_SIZE, CAPTURE_SIZE);
 
     onCapture(canvas.toDataURL("image/jpeg", 0.9));
-  }
+  }, [onCapture]);
+
+  useEffect(() => {
+    if (!autoCapture || !active || busy) return;
+
+    const timeoutId = window.setTimeout(capture, AUTO_CAPTURE_DELAY_MS);
+    return () => window.clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCapture, active, retrySignal]);
 
   return (
     <div className="flex flex-col items-center gap-4">

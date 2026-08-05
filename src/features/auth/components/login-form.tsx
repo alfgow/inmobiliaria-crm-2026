@@ -6,6 +6,9 @@ import { Eye, EyeOff, Loader2, ScanFace } from "lucide-react";
 
 import { FaceCapture } from "@/features/auth/components/face-capture";
 
+const MAX_AUTO_FACE_ATTEMPTS = 3;
+const AUTO_FACE_RETRY_DELAY_MS = 700;
+
 type LoginFormProps = {
   hasTrustedDevice: boolean;
 };
@@ -18,8 +21,10 @@ export function LoginForm({ hasTrustedDevice }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [faceAttempts, setFaceAttempts] = useState(0);
+  const [faceRetrySignal, setFaceRetrySignal] = useState(0);
 
-  async function postLogin(path: string, body: unknown) {
+  async function postLogin(path: string, body: unknown): Promise<boolean> {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 10000);
 
@@ -35,17 +40,19 @@ export function LoginForm({ hasTrustedDevice }: LoginFormProps) {
       if (res.ok) {
         router.push("/");
         router.refresh();
-        return;
+        return true;
       }
 
       const data = await res.json();
       setError(data.error ?? "Error al iniciar sesion");
+      return false;
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         setError("El inicio de sesion tardo demasiado. Intenta de nuevo.");
       } else {
         setError("No se pudo conectar con el servidor");
       }
+      return false;
     } finally {
       window.clearTimeout(timeoutId);
       setLoading(false);
@@ -59,10 +66,32 @@ export function LoginForm({ hasTrustedDevice }: LoginFormProps) {
     await postLogin("/api/auth/login", { email, password });
   }
 
+  function enterFaceMode() {
+    setError(null);
+    setFaceAttempts(0);
+    setMode("face");
+  }
+
+  function retryFaceCapture() {
+    setError(null);
+    setFaceAttempts(0);
+    setFaceRetrySignal((prev) => prev + 1);
+  }
+
   async function handleFaceCapture(imageDataUrl: string) {
     setLoading(true);
     setError(null);
-    await postLogin("/api/auth/login-face", { image: imageDataUrl });
+    const ok = await postLogin("/api/auth/login-face", { image: imageDataUrl });
+
+    if (!ok) {
+      setFaceAttempts((prev) => {
+        const next = prev + 1;
+        if (next < MAX_AUTO_FACE_ATTEMPTS) {
+          window.setTimeout(() => setFaceRetrySignal((signal) => signal + 1), AUTO_FACE_RETRY_DELAY_MS);
+        }
+        return next;
+      });
+    }
   }
 
   return (
@@ -181,10 +210,7 @@ export function LoginForm({ hasTrustedDevice }: LoginFormProps) {
               {hasTrustedDevice ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    setError(null);
-                    setMode("face");
-                  }}
+                  onClick={enterFaceMode}
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#d9e9dd] bg-white text-sm font-medium text-[#2c2c2c] transition hover:border-[var(--brand-secondary)]"
                 >
                   <ScanFace className="h-4 w-4" />
@@ -198,12 +224,28 @@ export function LoginForm({ hasTrustedDevice }: LoginFormProps) {
                 onCapture={handleFaceCapture}
                 busy={loading}
                 captureLabel="Verificar rostro"
+                autoStart
+                autoCapture
+                retrySignal={faceRetrySignal}
               />
 
               {error ? (
-                <div className="flex items-center gap-2.5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-600">
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-500" />
-                  {error}
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2.5 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-rose-500" />
+                    {error}
+                  </div>
+                  {faceAttempts >= MAX_AUTO_FACE_ATTEMPTS ? (
+                    <button
+                      type="button"
+                      onClick={retryFaceCapture}
+                      disabled={loading}
+                      className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[#d9e9dd] bg-white text-sm font-medium text-[#2c2c2c] transition hover:border-[var(--brand-secondary)] disabled:pointer-events-none disabled:opacity-60"
+                    >
+                      <ScanFace className="h-4 w-4" />
+                      Intentar de nuevo
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
 

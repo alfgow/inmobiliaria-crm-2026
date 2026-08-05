@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { ContactSearchButton } from "@/components/dashboard/contact-search-button";
+import { DashboardMobileMoreSheet } from "@/components/dashboard/dashboard-mobile-more-sheet";
 
 const navigationItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -112,7 +113,7 @@ export function DashboardMobileDock() {
   return (
     <nav
       aria-label="Navegación principal"
-      className="fixed inset-x-3 bottom-3 z-[60] grid grid-cols-5 gap-1.5 rounded-[1.4rem] border border-white/50 bg-white/55 p-1.5 text-[#2c2c2c] shadow-[0_18px_50px_rgba(44,44,44,0.14)] backdrop-blur-3xl supports-[backdrop-filter]:bg-white/55 lg:hidden"
+      className="fixed inset-x-3 bottom-3 z-[60] grid grid-cols-6 gap-1.5 rounded-[1.4rem] border border-white/50 bg-white/55 p-1.5 text-[#2c2c2c] shadow-[0_18px_50px_rgba(44,44,44,0.14)] backdrop-blur-3xl supports-[backdrop-filter]:bg-white/55 lg:hidden"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.25rem)" }}
     >
       {navigationItems.slice(0, 4).map((item) => {
@@ -136,6 +137,7 @@ export function DashboardMobileDock() {
         );
       })}
       <ContactSearchButton variant="dock" />
+      <DashboardMobileMoreSheet items={navigationItems.slice(4)} />
     </nav>
   );
 }
