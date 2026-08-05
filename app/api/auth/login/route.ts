@@ -3,46 +3,18 @@ import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
 import { isDatabaseUnavailableError } from "@/lib/prisma-error";
+import { shouldUseSecureCookie } from "@/lib/request";
 import { signToken, SESSION_COOKIE } from "@/lib/session";
+import { TimeoutError, withTimeout } from "@/lib/with-timeout";
 
 const LOGIN_DB_TIMEOUT_MS = 8000;
-
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      reject(new Error("LOGIN_DB_TIMEOUT"));
-    }, timeoutMs);
-
-    promise
-      .then((result) => {
-        clearTimeout(timeoutId);
-        resolve(result);
-      })
-      .catch((error) => {
-        clearTimeout(timeoutId);
-        reject(error);
-      });
-  });
-}
-
-function shouldUseSecureCookie(req: NextRequest): boolean {
-  const host = req.headers.get("host")?.split(":")[0]?.toLowerCase() ?? "";
-  if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
-    return false;
-  }
-
-  return (
-    req.nextUrl.protocol === "https:" ||
-    req.headers.get("x-forwarded-proto") === "https"
-  );
-}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const email = (body.email ?? "").toLowerCase().trim();
     const password = body.password ?? "";
-    const secureCookie = shouldUseSecureCookie(req);
+    const secureCookie = shouldUseSecureCookie(req.headers);
 
     if (!email || !password) {
       return NextResponse.json({ error: "Campos requeridos" }, { status: 400 });
@@ -88,11 +60,7 @@ export async function POST(req: NextRequest) {
     });
     return res;
   } catch (error) {
-    if (
-      error instanceof Error &&
-      (error.message === "LOGIN_DB_TIMEOUT" ||
-        isDatabaseUnavailableError(error))
-    ) {
+    if (error instanceof TimeoutError || isDatabaseUnavailableError(error)) {
       return NextResponse.json(
         {
           error:

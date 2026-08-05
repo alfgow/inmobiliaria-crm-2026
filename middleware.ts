@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 const SESSION_COOKIE = "crm_session";
-const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout", "/api/v1"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/auth/login",
+  "/api/auth/login-face",
+  "/api/auth/logout",
+  "/api/v1",
+];
 
 const secret = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "dev-secret-change-me-in-production"

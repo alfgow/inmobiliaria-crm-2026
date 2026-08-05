@@ -9,6 +9,12 @@ import {
   ApiKeysPanel,
   type ApiKeyListItem,
 } from "@/features/api-users/components/api-keys-panel";
+import { DEVICE_COOKIE, hashDeviceToken } from "@/features/auth/lib/device-token";
+import { FaceEnrollmentPanel } from "@/features/auth/components/face-enrollment-panel";
+import {
+  TrustedDevicesPanel,
+  type TrustedDeviceListItem,
+} from "@/features/auth/components/trusted-devices-panel";
 import { isDatabaseUnavailableError } from "@/lib/prisma-error";
 import { prisma } from "@/lib/prisma";
 import { SESSION_COOKIE, verifyToken } from "@/lib/session";
@@ -64,6 +70,7 @@ export default async function ConfiguracionPage() {
 
   const requestHeaders = await headers();
   const baseUrl = getBaseUrl(requestHeaders);
+  const userId = BigInt(user.id);
   let databaseUnavailable = false;
   let apiKeys: Array<{
     id: bigint;
@@ -73,20 +80,45 @@ export default async function ConfiguracionPage() {
     created_at: Date | null;
     last_used_at: Date | null;
   }> = [];
+  let activeFaceEnrollment: { enrolled_at: Date } | null = null;
+  let trustedDevices: Array<{
+    id: bigint;
+    label: string | null;
+    device_token_hash: string;
+    created_at: Date;
+    last_used_at: Date | null;
+  }> = [];
 
   try {
-    apiKeys = await prisma.api_keys.findMany({
-      where: { user_id: new Prisma.Decimal(user.id) },
-      orderBy: { created_at: "desc" },
-      select: {
-        id: true,
-        name: true,
-        prefix: true,
-        allowed_ip: true,
-        created_at: true,
-        last_used_at: true,
-      },
-    });
+    [apiKeys, activeFaceEnrollment, trustedDevices] = await Promise.all([
+      prisma.api_keys.findMany({
+        where: { user_id: new Prisma.Decimal(user.id) },
+        orderBy: { created_at: "desc" },
+        select: {
+          id: true,
+          name: true,
+          prefix: true,
+          allowed_ip: true,
+          created_at: true,
+          last_used_at: true,
+        },
+      }),
+      prisma.user_face_enrollments.findFirst({
+        where: { user_id: userId, status: "active" },
+        select: { enrolled_at: true },
+      }),
+      prisma.trusted_devices.findMany({
+        where: { user_id: userId, status: "active" },
+        orderBy: { created_at: "desc" },
+        select: {
+          id: true,
+          label: true,
+          device_token_hash: true,
+          created_at: true,
+          last_used_at: true,
+        },
+      }),
+    ]);
   } catch (error) {
     if (!isDatabaseUnavailableError(error)) {
       throw error;
@@ -94,6 +126,21 @@ export default async function ConfiguracionPage() {
 
     databaseUnavailable = true;
   }
+
+  const cookieStore = await cookies();
+  const currentDeviceTokenHash = cookieStore.get(DEVICE_COOKIE)?.value
+    ? hashDeviceToken(cookieStore.get(DEVICE_COOKIE)!.value)
+    : null;
+
+  const serializedTrustedDevices: TrustedDeviceListItem[] = trustedDevices.map((device) => ({
+    id: device.id.toString(),
+    label: device.label ?? "Dispositivo sin nombre",
+    isCurrent: device.device_token_hash === currentDeviceTokenHash,
+    createdAt: formatDateTime(device.created_at, "Sin fecha"),
+    lastUsedAt: formatDateTime(device.last_used_at),
+  }));
+
+  const hasTrustedCurrentDevice = serializedTrustedDevices.some((device) => device.isCurrent);
 
   const lastUsedAt =
     apiKeys
@@ -183,6 +230,29 @@ export default async function ConfiguracionPage() {
               </p>
             </div>
           </section>
+
+          <section className="flex flex-col gap-2">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-neutral-400">
+              Seguridad de mi cuenta
+            </p>
+            <h2 className="text-2xl font-semibold tracking-tight text-brand-text">
+              Login con reconocimiento facial
+            </h2>
+          </section>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <FaceEnrollmentPanel
+              hasActiveEnrollment={Boolean(activeFaceEnrollment)}
+              enrolledAt={
+                activeFaceEnrollment ? formatDateTime(activeFaceEnrollment.enrolled_at) : null
+              }
+            />
+            <TrustedDevicesPanel
+              devices={serializedTrustedDevices}
+              hasActiveEnrollment={Boolean(activeFaceEnrollment)}
+              hasTrustedCurrentDevice={hasTrustedCurrentDevice}
+            />
+          </div>
 
           <ApiKeysPanel apiKeys={serializedApiKeys} baseUrl={baseUrl} />
 
