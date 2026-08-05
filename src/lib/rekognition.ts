@@ -6,7 +6,7 @@ import {
 } from "@aws-sdk/client-rekognition";
 
 const rekognition = new RekognitionClient({
-  region: process.env.AWS_DEFAULT_REGION!,
+  region: process.env.AWS_REKOGNITION_REGION ?? process.env.AWS_DEFAULT_REGION!,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
