@@ -6,9 +6,10 @@ import type { SessionUser } from "@/lib/session";
 
 interface Props {
   user: SessionUser | null;
+  isAdmin?: boolean;
 }
 
-export function DashboardDesktopChrome({ user }: Props) {
+export function DashboardDesktopChrome({ user, isAdmin = false }: Props) {
   const initials = user?.name
     ? user.name
         .split(" ")
@@ -21,7 +22,7 @@ export function DashboardDesktopChrome({ user }: Props) {
   return (
     <>
       <div className="fixed left-4 top-4 z-40 hidden h-[calc(100dvh-2rem)] w-[19rem] lg:block">
-        <DashboardNavbar />
+        <DashboardNavbar isAdmin={isAdmin} />
       </div>
 
       <div className="fixed left-[22rem] right-4 top-4 z-30 hidden lg:block">

@@ -1,6 +1,6 @@
 import { BarChart3, Clock3, FileText, Send } from "lucide-react";
 
-import { BlogPageShell } from "@/features/blog/components/blog-page-shell";
+import { PageShell } from "@/components/dashboard/page-shell";
 import { BlogTable, type BlogListItem } from "@/features/blog/components/blog-table";
 import { blogSelect, serializeBlog } from "@/features/blog/services/blog.service";
 import { isDatabaseUnavailableError } from "@/lib/prisma-error";
@@ -51,7 +51,7 @@ export default async function BlogPage() {
   }
 
   return (
-    <BlogPageShell
+    <PageShell
       eyebrow="Blog"
       title="Contenido y posicionamiento"
       description="Administra articulos, guias y contenido SEO con estado editorial, imagenes y API para agentes AI."
@@ -73,6 +73,6 @@ export default async function BlogPage() {
           <BlogTable blogs={blogs} />
         </>
       )}
-    </BlogPageShell>
+    </PageShell>
   );
 }

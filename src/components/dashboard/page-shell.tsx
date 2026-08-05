@@ -12,7 +12,7 @@ type Props = {
   actionLabel?: string;
 };
 
-export function BlogPageShell({ eyebrow, title, description, children, actionHref, actionLabel }: Props) {
+export function PageShell({ eyebrow, title, description, children, actionHref, actionLabel }: Props) {
   return (
     <main className="relative isolate min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-brand-base px-4 py-6 text-brand-text sm:px-6 lg:px-10">
       <AnimatedDashboardBackground>

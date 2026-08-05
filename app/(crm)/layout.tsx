@@ -14,13 +14,15 @@ export default async function CrmLayout({
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   const user = token ? await verifyToken(token) : null;
 
+  const isAdmin = user?.role === "admin";
+
   return (
     <ContactSearchModalProvider>
-      <DashboardDesktopChrome user={user} />
+      <DashboardDesktopChrome user={user} isAdmin={isAdmin} />
       <div className="min-h-screen pb-28 lg:pb-0 lg:pl-[22rem] lg:pt-[6rem]">
         {children}
       </div>
-      <DashboardMobileDock />
+      <DashboardMobileDock isAdmin={isAdmin} />
     </ContactSearchModalProvider>
   );
 }

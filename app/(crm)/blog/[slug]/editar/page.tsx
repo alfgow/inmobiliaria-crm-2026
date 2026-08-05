@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { BlogForm } from "@/features/blog/components/blog-form";
-import { BlogPageShell } from "@/features/blog/components/blog-page-shell";
+import { PageShell } from "@/components/dashboard/page-shell";
 import { blogSelect, serializeBlog } from "@/features/blog/services/blog.service";
 import { prisma } from "@/lib/prisma";
 
@@ -25,12 +25,12 @@ export default async function EditBlogPage({ params }: PageProps) {
   const serialized = serializeBlog(blog);
 
   return (
-    <BlogPageShell
+    <PageShell
       eyebrow="Editar blog"
       title={serialized.titulo}
       description="Actualiza contenido, estado editorial, imagenes y metadatos SEO."
     >
       <BlogForm mode="edit" blog={serialized} />
-    </BlogPageShell>
+    </PageShell>
   );
 }

@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   MessageCircle,
   Settings2,
+  UserCog,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -25,6 +26,12 @@ const navigationItems = [
   { href: "/regina-contextos", label: "Regina", icon: Database },
   { href: "/configuracion", label: "Ajustes", icon: Settings2 },
 ];
+
+const adminOnlyItem = { href: "/usuarios", label: "Usuarios", icon: UserCog };
+
+function getNavigationItems(isAdmin: boolean) {
+  return isAdmin ? [...navigationItems, adminOnlyItem] : navigationItems;
+}
 
 function NavLink({
   href,
@@ -62,8 +69,9 @@ function NavLink({
   );
 }
 
-export function DashboardNavbar() {
+export function DashboardNavbar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const items = getNavigationItems(isAdmin);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" || pathname.startsWith("/dashboard") : pathname.startsWith(href);
@@ -87,7 +95,7 @@ export function DashboardNavbar() {
         </div>
 
         <nav aria-label="Navegación principal" className="flex flex-col gap-1.5">
-          {navigationItems.map((item) => (
+          {items.map((item) => (
             <NavLink
               key={item.href}
               href={item.href}
@@ -104,8 +112,9 @@ export function DashboardNavbar() {
   );
 }
 
-export function DashboardMobileDock() {
+export function DashboardMobileDock({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const items = getNavigationItems(isAdmin);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" || pathname.startsWith("/dashboard") : pathname.startsWith(href);
@@ -116,7 +125,7 @@ export function DashboardMobileDock() {
       className="fixed inset-x-3 bottom-3 z-[60] grid grid-cols-6 gap-1.5 rounded-[1.4rem] border border-white/50 bg-white/55 p-1.5 text-[#2c2c2c] shadow-[0_18px_50px_rgba(44,44,44,0.14)] backdrop-blur-3xl supports-[backdrop-filter]:bg-white/55 lg:hidden"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.25rem)" }}
     >
-      {navigationItems.slice(0, 4).map((item) => {
+      {items.slice(0, 4).map((item) => {
         const Icon = item.icon;
         const active = isActive(item.href);
 
@@ -137,7 +146,7 @@ export function DashboardMobileDock() {
         );
       })}
       <ContactSearchButton variant="dock" />
-      <DashboardMobileMoreSheet items={navigationItems.slice(4)} />
+      <DashboardMobileMoreSheet items={items.slice(4)} />
     </nav>
   );
 }

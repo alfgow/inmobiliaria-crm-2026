@@ -11,6 +11,7 @@ const PUBLIC_PATHS = [
   "/api/auth/logout",
   "/api/v1",
 ];
+const ADMIN_ONLY_PATHS = ["/usuarios"];
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -36,7 +37,16 @@ export async function proxy(req: NextRequest) {
   const secret = getAuthSecret();
 
   try {
-    await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, secret);
+
+    const isAdminOnlyPath = ADMIN_ONLY_PATHS.some(
+      (p) => pathname === p || pathname.startsWith(`${p}/`),
+    );
+
+    if (isAdminOnlyPath && payload.role !== "admin") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+
     return NextResponse.next();
   } catch {
     const res = NextResponse.redirect(new URL("/login", req.url));
