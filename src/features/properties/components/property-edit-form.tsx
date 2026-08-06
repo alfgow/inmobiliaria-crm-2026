@@ -1085,11 +1085,10 @@ export function PropertyEditForm({
           <SectionLabel>Publicación</SectionLabel>
           <div className="flex flex-col gap-4">
             <div>
-              <FieldLabel label="Descripción SEO" hint={`${seoDescription.length}/160`} />
+              <FieldLabel label="Descripción SEO" />
               <AutoGrowTextarea
                 value={seoDescription}
                 onChange={(e) => setSeoDescription(e.target.value)}
-                maxLength={160}
                 className={`${inputCls} resize-none`}
                 placeholder="Resumen breve para buscadores y redes sociales."
               />
