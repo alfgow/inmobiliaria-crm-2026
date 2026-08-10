@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Bot, MessageCircle, User, X } from "lucide-react";
+import Link from "next/link";
 
 import type { ReginaContextoRow } from "./regina-contextos-table";
 
@@ -28,6 +29,7 @@ function formatTime(ts: string) {
     return new Intl.DateTimeFormat("es-MX", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "America/Mexico_City",
     }).format(new Date(ts));
   } catch {
     return "";
@@ -38,6 +40,7 @@ function formatDate(ts: string) {
   try {
     return new Intl.DateTimeFormat("es-MX", {
       dateStyle: "medium",
+      timeZone: "America/Mexico_City",
     }).format(new Date(ts));
   } catch {
     return "";
@@ -105,10 +108,18 @@ export function ChatHistorialModal({ row, onClose }: Props) {
             <Bot className="size-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-white">
+            <Link
+              href={`/contactos/${row.contacto_id}`}
+              className="block truncate font-semibold text-white transition hover:text-brand-primary hover:underline"
+            >
               {row.nombre ?? "Sin nombre"}
-            </p>
-            <p className="font-mono text-[11px] text-white/40">{row.wa_id}</p>
+            </Link>
+            <Link
+              href={`/contactos/${row.contacto_id}`}
+              className="font-mono text-[11px] text-white/40 transition hover:text-brand-primary hover:underline"
+            >
+              {row.telefono}
+            </Link>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {row.inmueble_id && (

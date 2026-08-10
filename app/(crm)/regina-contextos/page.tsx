@@ -15,26 +15,49 @@ function formatDate(value: Date | null) {
   return new Intl.DateTimeFormat("es-MX", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "America/Mexico_City",
   }).format(value);
 }
 
 export default async function ReginaContextosPage() {
-  const contextos = await prisma.regina_contextos.findMany({
-    orderBy: [{ updated_at: "desc" }, { wa_id: "asc" }],
+  const conversaciones = await prisma.contacto_conversaciones.findMany({
+    orderBy: [{ ultimo_mensaje_at: "desc" }, { iniciada_at: "desc" }],
     select: {
       wa_id: true,
-      nombre: true,
       inmueble_id: true,
-      status: true,
-      rechazos_post: true,
-      historial: true,
+      ultimo_mensaje_at: true,
       updated_at: true,
+      contactos: {
+        select: { id: true, nombre: true, telefono: true },
+      },
+      regina_contextos: {
+        select: { status: true, rechazos_post: true },
+      },
+      contacto_mensajes: {
+        orderBy: { enviado_at: "asc" },
+        select: { enviado_at: true, rol: true, mensaje: true },
+      },
     },
   });
 
-  const rows = contextos.map((contexto) => ({
-    ...contexto,
-    updated_at: contexto.updated_at ? contexto.updated_at.toISOString() : null,
+  const rows = conversaciones.map((conversacion) => ({
+    wa_id: conversacion.wa_id,
+    contacto_id: conversacion.contactos.id.toString(),
+    telefono: conversacion.contactos.telefono,
+    nombre: conversacion.contactos.nombre,
+    inmueble_id: conversacion.inmueble_id
+      ? Number(conversacion.inmueble_id)
+      : null,
+    status: conversacion.regina_contextos.status,
+    rechazos_post: conversacion.regina_contextos.rechazos_post,
+    historial: conversacion.contacto_mensajes.map((mensaje) => ({
+      ts: mensaje.enviado_at.toISOString(),
+      rol: mensaje.rol,
+      mensaje: mensaje.mensaje,
+    })),
+    updated_at: (
+      conversacion.ultimo_mensaje_at ?? conversacion.updated_at
+    ).toISOString(),
   }));
 
   const totalContexts = rows.length;
@@ -59,15 +82,15 @@ export default async function ReginaContextosPage() {
               <div className="max-w-3xl space-y-4">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.35em] text-brand-primary">
                   <Database className="size-3.5" />
-                  regina_contextos
+                  contacto_conversaciones
                 </div>
                 <div className="space-y-3">
                   <h1 className="max-w-4xl text-3xl font-semibold tracking-tight text-balance text-brand-primary sm:text-5xl lg:text-6xl">
-                    Contextos de Regina
+                    Conversaciones de Regina
                   </h1>
                   <p className="max-w-2xl text-sm leading-7 text-slate-200 sm:text-base">
-                    Revisa los contextos registrados, filtra por estado y elimina
-                    individualmente los registros que ya no necesitas.
+                    Revisa las conversaciones de los contactos, filtra por estado y
+                    consulta su historial de mensajes.
                   </p>
                 </div>
               </div>
@@ -92,7 +115,7 @@ export default async function ReginaContextosPage() {
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-[1.75rem] border border-border-soft bg-white/90 p-5 shadow-[0_20px_55px_rgba(44,44,44,0.06)]">
               <p className="text-[10px] uppercase tracking-[0.35em] text-[#6b7280]">
-                Contextos
+                Conversaciones
               </p>
               <p className="mt-3 text-3xl font-semibold tracking-tight">{totalContexts}</p>
             </div>
@@ -136,7 +159,7 @@ export default async function ReginaContextosPage() {
               </div>
               <div className="inline-flex items-center gap-2 rounded-full border border-brand-primary/20 bg-brand-primary/10 px-4 py-2 text-sm font-medium text-brand-secondary">
                 <Search className="size-4" />
-                {rows.length} contextos cargados
+                {rows.length} conversaciones cargadas
               </div>
             </div>
           </section>

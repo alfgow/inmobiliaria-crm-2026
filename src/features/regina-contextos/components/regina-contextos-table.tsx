@@ -28,6 +28,8 @@ import { DeleteReginaContextoButton } from "@/features/regina-contextos/componen
 
 export type ReginaContextoRow = {
   wa_id: string;
+  contacto_id: string;
+  telefono: string;
   nombre: string | null;
   inmueble_id: number | null;
   status: string | null;
@@ -50,6 +52,7 @@ function formatDate(value: string | null) {
   return new Intl.DateTimeFormat("es-MX", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "America/Mexico_City",
   }).format(date);
 }
 
@@ -104,20 +107,20 @@ export function ReginaContextosTable({ data }: Props) {
   const columns = useMemo<ColumnDef<ReginaContextoRow>[]>(
     () => [
       {
-        accessorKey: "wa_id",
+        accessorKey: "telefono",
         header: ({ column }) => (
           <button
             type="button"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
             className="inline-flex items-center gap-2"
           >
-            WA ID
+            Teléfono
             <ArrowUpDown className="size-3.5 text-brand-text/35" />
           </button>
         ),
         cell: ({ row }) => (
           <span className="inline-flex max-w-full rounded-full border border-border-soft bg-surface-2 px-3 py-1 font-mono text-[11px] text-brand-text/70">
-            {row.original.wa_id}
+            {row.original.telefono}
           </span>
         ),
       },
@@ -255,14 +258,14 @@ export function ReginaContextosTable({ data }: Props) {
       <div className="flex flex-col gap-4 border-b border-border-soft pb-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-2">
           <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-brand-text/45">
-            Tabla de contextos
+            Tabla de conversaciones
           </p>
           <h2 className="text-xl font-semibold tracking-tight text-brand-text">
-            Contextos de Regina
+            Conversaciones de Regina
           </h2>
           <p className="max-w-2xl text-sm leading-6 text-brand-text/65">
-            Busca por WA ID, nombre, estado o inmueble asociado. Ordena y elimina
-            cada contexto de forma individual.
+            Busca por teléfono, nombre, estado o inmueble asociado. Ordena y
+            consulta cada conversación de forma individual.
           </p>
         </div>
 
@@ -300,7 +303,7 @@ export function ReginaContextosTable({ data }: Props) {
           <input
             value={globalFilter}
             onChange={(event) => setGlobalFilter(event.target.value)}
-            placeholder="Buscar por WA ID, nombre o estado"
+            placeholder="Buscar por teléfono, nombre o estado"
             className="h-11 w-full rounded-full border border-border-soft bg-white pl-11 pr-4 text-sm text-brand-text outline-none transition placeholder:text-brand-text/35 focus:border-brand-secondary focus:ring-2 focus:ring-brand-secondary/20"
           />
         </div>
@@ -393,10 +396,10 @@ export function ReginaContextosTable({ data }: Props) {
                   <td colSpan={columns.length} className="px-4 py-14 text-center">
                     <div className="mx-auto max-w-md space-y-2">
                       <p className="text-base font-medium text-brand-text/70">
-                        No encontramos contextos con esos filtros.
+                        No encontramos conversaciones con esos filtros.
                       </p>
                       <p className="text-sm leading-6 text-brand-text/45">
-                        Prueba quitando el filtro de estado o busca por un WA ID más específico.
+                        Prueba quitando el filtro de estado o busca por otro teléfono.
                       </p>
                     </div>
                   </td>
@@ -416,7 +419,7 @@ export function ReginaContextosTable({ data }: Props) {
 
       <div className="mt-5 flex flex-col gap-4 border-t border-border-soft pt-4 lg:flex-row lg:items-center lg:justify-between">
         <p className="text-sm text-brand-text/60">
-          Mostrando {table.getRowModel().rows.length} de {data.length} contextos.
+          Mostrando {table.getRowModel().rows.length} de {data.length} conversaciones.
         </p>
 
         <div className="flex items-center justify-center gap-2">
