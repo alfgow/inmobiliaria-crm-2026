@@ -84,7 +84,7 @@ export function ChatHistorialModal({ row, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center px-4 pb-4 sm:items-center sm:pb-0">
+    <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:px-4 sm:py-4">
       {/* Backdrop */}
       <button
         type="button"
@@ -95,41 +95,42 @@ export function ChatHistorialModal({ row, onClose }: Props) {
 
       {/* Modal */}
       <div
-        className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-[2rem] shadow-[0_40px_100px_rgba(0,0,0,0.55)]"
+        className="relative z-10 flex h-dvh min-h-0 w-full max-w-lg flex-col overflow-hidden rounded-none shadow-[0_40px_100px_rgba(0,0,0,0.55)] sm:h-auto sm:max-h-[88dvh] sm:rounded-[2rem]"
         style={{
-          maxHeight: "88dvh",
           background: "linear-gradient(160deg, #1a1b26 0%, #0f1117 60%)",
           border: "1px solid rgba(255,255,255,0.08)",
         }}
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center gap-3 border-b border-white/8 px-5 py-4">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-brand-secondary/25 text-brand-secondary">
-            <Bot className="size-5" />
+        <div className="relative shrink-0 border-b border-white/8 px-4 py-4 pr-14 sm:px-5 sm:pr-14">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-brand-secondary/25 text-brand-secondary">
+              <Bot className="size-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <Link
+                href={`/contactos/${row.contacto_id}`}
+                className="block truncate font-semibold text-white transition hover:text-brand-primary hover:underline"
+              >
+                {row.nombre ?? "Sin nombre"}
+              </Link>
+              <Link
+                href={`/contactos/${row.contacto_id}`}
+                className="block truncate font-mono text-[11px] text-white/45 transition hover:text-brand-primary hover:underline"
+              >
+                {row.telefono}
+              </Link>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <Link
-              href={`/contactos/${row.contacto_id}`}
-              className="block truncate font-semibold text-white transition hover:text-brand-primary hover:underline"
-            >
-              {row.nombre ?? "Sin nombre"}
-            </Link>
-            <Link
-              href={`/contactos/${row.contacto_id}`}
-              className="font-mono text-[11px] text-white/40 transition hover:text-brand-primary hover:underline"
-            >
-              {row.telefono}
-            </Link>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2 sm:ml-[52px]">
             {row.inmueble_id && (
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-white/55">
+              <span className="max-w-full truncate rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] text-white/55">
                 Inmueble #{row.inmueble_id}
               </span>
             )}
             <span
               className={[
-                "rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em]",
+                "max-w-full truncate rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.2em]",
                 (row.status ?? "").toLowerCase().includes("activ") || (row.status ?? "").toLowerCase().includes("open")
                   ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
                   : "border-white/10 bg-white/5 text-white/45",
@@ -137,21 +138,21 @@ export function ChatHistorialModal({ row, onClose }: Props) {
             >
               {row.status ?? "sin estado"}
             </span>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex size-8 items-center justify-center rounded-full text-white/40 transition hover:bg-white/10 hover:text-white"
-              aria-label="Cerrar"
-            >
-              <X className="size-4" />
-            </button>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-4 top-4 flex size-9 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white"
+            aria-label="Cerrar"
+          >
+            <X className="size-4" />
+          </button>
         </div>
 
         {/* Chat area */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto px-4 py-5"
+          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-3 py-4 sm:px-4 sm:py-5"
           style={{
             backgroundImage:
               "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0)",
@@ -189,7 +190,7 @@ export function ChatHistorialModal({ row, onClose }: Props) {
                         <div
                           key={msg.index}
                           className={[
-                            "flex items-end gap-2",
+                            "flex min-w-0 items-end gap-2",
                             isRegina ? "flex-row" : "flex-row-reverse",
                           ].join(" ")}
                         >
@@ -212,24 +213,19 @@ export function ChatHistorialModal({ row, onClose }: Props) {
                           {/* Bubble + time */}
                           <div
                             className={[
-                              "flex max-w-[76%] flex-col gap-1",
+                              "flex min-w-0 max-w-[82%] flex-col gap-1 sm:max-w-[76%]",
                               isRegina ? "items-start" : "items-end",
                             ].join(" ")}
                           >
                             <div
                               className={[
-                                "rounded-2xl px-4 py-2.5 text-sm leading-[1.6]",
+                                "max-w-full whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2.5 text-sm leading-[1.6] [overflow-wrap:anywhere] sm:px-4",
                                 isRegina
                                   ? "rounded-bl-[4px] bg-brand-secondary/20 text-white"
                                   : "rounded-br-[4px] bg-slate-600/70 text-white/90",
                               ].join(" ")}
                             >
-                              {lines.map((line, j) => (
-                                <span key={j}>
-                                  {line}
-                                  {j < lines.length - 1 && <br />}
-                                </span>
-                              ))}
+                              {lines.join("\n")}
                             </div>
                             <p
                               className={[

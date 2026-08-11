@@ -296,6 +296,12 @@ feat(contacts): add contact filters
 
 fix(auth): session validation bug
 
+## Push a main/master
+
+Al hacer push a las ramas `main` o `master`, usar la deploy key SSH que ya está configurada en el repositorio.
+
+No usar `gh` para realizar estos pushes; no es necesario.
+
 ---
 
 # Regla Principal
