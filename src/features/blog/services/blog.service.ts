@@ -34,6 +34,17 @@ export type BlogRecord = {
 
 type BlogImageWriter = Pick<typeof prisma, "blog_images">;
 
+const LEGACY_BLOG_BUCKET = process.env.AWS_LEGACY_BLOG_BUCKET ?? "as-s3-blog-images";
+const LEGACY_BLOG_REGION = process.env.AWS_LEGACY_BLOG_REGION ?? "mx-central-1";
+
+function getBlogImageUrl(s3Key: string, storedUrl?: string | null) {
+  if (s3Key.startsWith("inmuebles/blogs/")) {
+    return storedUrl || getPublicImageUrl(s3Key);
+  }
+
+  return `https://${LEGACY_BLOG_BUCKET}.s3.${LEGACY_BLOG_REGION}.amazonaws.com/${encodeURI(s3Key)}`;
+}
+
 export const blogSelect = {
   id: true,
   autor_id: true,
@@ -120,7 +131,7 @@ export function sanitizeBlogHtml(html: string) {
   }).trim();
 }
 
-export function parseBlogPayload(input: unknown) {
+export function parseBlogPayload(input: unknown, allowedExistingKeys: ReadonlySet<string> = new Set()) {
   const parsed = blogInputSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -138,7 +149,9 @@ export function parseBlogPayload(input: unknown) {
     };
   }
 
-  const invalidKey = parsed.data.images.find((image) => !image.s3Key.startsWith("inmuebles/blogs/"));
+  const invalidKey = parsed.data.images.find(
+    (image) => !image.s3Key.startsWith("inmuebles/blogs/") && !allowedExistingKeys.has(image.s3Key),
+  );
   if (invalidKey) {
     return {
       ok: false as const,
@@ -181,7 +194,7 @@ export function serializeBlog(blog: BlogRecord) {
     imagenes: (blog.blog_images ?? []).map((image) => ({
       id: image.id.toString(),
       s3Key: image.s3_key,
-      url: getPublicImageUrl(image.s3_key),
+      url: getBlogImageUrl(image.s3_key, image.url),
       alt: image.alt,
       orden: Number(image.orden ?? 0),
     })),
@@ -196,7 +209,12 @@ export function serializeBlog(blog: BlogRecord) {
   };
 }
 
-export async function upsertBlogImages(blogId: bigint, images: BlogInput["images"], tx: BlogImageWriter = prisma) {
+export async function upsertBlogImages(
+  blogId: bigint,
+  images: BlogInput["images"],
+  tx: BlogImageWriter = prisma,
+  existingUrls: ReadonlyMap<string, string | null> = new Map(),
+) {
   const previousImages = await tx.blog_images.findMany({
     where: { blog_id: blogId },
     select: { s3_key: true },
@@ -217,7 +235,7 @@ export async function upsertBlogImages(blogId: bigint, images: BlogInput["images
       blog_id: blogId,
       disk: "s3",
       s3_key: image.s3Key,
-      url: getPublicImageUrl(image.s3Key),
+      url: getBlogImageUrl(image.s3Key, existingUrls.get(image.s3Key)),
       alt: image.alt || null,
       orden: image.orden ?? index,
       updated_at: new Date(),

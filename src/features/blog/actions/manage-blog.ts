@@ -81,18 +81,23 @@ export async function updateBlog(slug: string, input: unknown) {
     return { error: "Tu sesion expiro. Vuelve a iniciar sesion." };
   }
 
-  const parsed = parseBlogPayload(input);
-  if (!parsed.ok) {
-    return { error: parsed.error };
-  }
-
   const current = await prisma.blogs.findUnique({
     where: { slug },
-    select: { id: true, slug: true },
+    select: {
+      id: true,
+      slug: true,
+      blog_images: { select: { s3_key: true, url: true } },
+    },
   });
 
   if (!current) {
     return { error: "Blog no encontrado." };
+  }
+
+  const existingKeys = new Set(current.blog_images.map((image) => image.s3_key));
+  const parsed = parseBlogPayload(input, existingKeys);
+  if (!parsed.ok) {
+    return { error: parsed.error };
   }
 
   const now = new Date();
@@ -117,7 +122,10 @@ export async function updateBlog(slug: string, input: unknown) {
         },
       });
 
-      return upsertBlogImages(current.id, parsed.data.images, tx);
+      const existingUrls = new Map(
+        current.blog_images.map((image) => [image.s3_key, image.url] as const),
+      );
+      return upsertBlogImages(current.id, parsed.data.images, tx, existingUrls);
     });
 
     await Promise.allSettled(removedKeys.map((s3Key) => deleteObject(s3Key)));
