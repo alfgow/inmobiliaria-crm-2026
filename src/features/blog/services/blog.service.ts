@@ -185,7 +185,7 @@ export function serializeBlog(blog: BlogRecord) {
     imagenes: (blog.blog_images ?? []).map((image) => ({
       id: image.id.toString(),
       s3Key: image.s3_key,
-      url: image.url ?? getPublicImageUrl(image.s3_key),
+      url: getPublicImageUrl(image.s3_key),
       alt: image.alt,
       orden: Number(image.orden ?? 0),
     })),

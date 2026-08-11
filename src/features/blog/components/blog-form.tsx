@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ImagePlus, Loader2, Save, Trash2, Upload } from "lucide-react";
-import { useRef, useState, useTransition } from "react";
+import { ImagePlus, Loader2, Save, Trash2, Upload, X } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
@@ -81,6 +81,23 @@ export function BlogForm({ mode, blog }: Props) {
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [existingImages, setExistingImages] = useState<ExistingImage[]>(blog?.imagenes ?? []);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ url: string; alt: string } | null>(null);
+
+  useEffect(() => {
+    if (!previewImage) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreviewImage(null);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [previewImage]);
 
   const form = useForm<BlogFormValues>({
     resolver: zodResolver(blogInputSchema),
@@ -322,9 +339,14 @@ export function BlogForm({ mode, blog }: Props) {
           <div className="grid gap-3">
             {existingImages.map((image) => (
               <div key={image.s3Key} className="overflow-hidden rounded-2xl border border-border-soft bg-brand-surface">
-                <div className="relative aspect-[16/10]">
+                <button
+                  type="button"
+                  onClick={() => setPreviewImage({ url: image.url, alt: image.alt ?? "Imagen de blog" })}
+                  className="relative block aspect-[16/10] w-full cursor-zoom-in overflow-hidden"
+                  aria-label="Ver imagen en tamaño grande"
+                >
                   <Image src={image.url} alt={image.alt ?? "Imagen de blog"} fill className="object-cover" />
-                </div>
+                </button>
                 <div className="flex items-center justify-between gap-2 p-3">
                   <input
                     value={image.alt ?? ""}
@@ -345,9 +367,14 @@ export function BlogForm({ mode, blog }: Props) {
 
             {pendingImages.map((image) => (
               <div key={image.uid} className="overflow-hidden rounded-2xl border border-border-soft bg-brand-surface">
-                <div className="relative aspect-[16/10]">
+                <button
+                  type="button"
+                  onClick={() => setPreviewImage({ url: image.previewUrl, alt: image.alt || image.file.name })}
+                  className="relative block aspect-[16/10] w-full cursor-zoom-in overflow-hidden"
+                  aria-label="Ver imagen en tamaño grande"
+                >
                   <Image src={image.previewUrl} alt={image.file.name} fill className="object-cover" unoptimized />
-                </div>
+                </button>
                 <div className="flex items-center justify-between gap-2 p-3">
                   <input
                     value={image.alt}
@@ -402,6 +429,38 @@ export function BlogForm({ mode, blog }: Props) {
           </div>
         )}
       </aside>
+
+      {previewImage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Vista ampliada de la imagen"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm sm:p-8"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPreviewImage(null);
+          }}
+        >
+          <div className="relative h-[min(80vh,900px)] w-full max-w-6xl overflow-hidden rounded-2xl bg-black shadow-2xl">
+            <Image
+              src={previewImage.url}
+              alt={previewImage.alt}
+              fill
+              sizes="(max-width: 768px) 100vw, 90vw"
+              className="object-contain"
+              unoptimized={previewImage.url.startsWith("blob:")}
+              priority
+            />
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="absolute right-3 top-3 inline-flex size-10 items-center justify-center rounded-full bg-black/65 text-white transition hover:bg-black/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              aria-label="Cerrar vista ampliada"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
