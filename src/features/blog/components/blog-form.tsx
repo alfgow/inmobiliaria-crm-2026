@@ -345,7 +345,7 @@ export function BlogForm({ mode, blog }: Props) {
                   className="relative block aspect-[16/10] w-full cursor-zoom-in overflow-hidden"
                   aria-label="Ver imagen en tamaño grande"
                 >
-                  <Image src={image.url} alt={image.alt ?? "Imagen de blog"} fill className="object-cover" />
+                  <Image src={image.url} alt={image.alt ?? "Imagen de blog"} fill className="object-cover" unoptimized />
                 </button>
                 <div className="flex items-center justify-between gap-2 p-3">
                   <input

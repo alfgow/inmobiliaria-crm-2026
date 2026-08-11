@@ -42,6 +42,8 @@ COPY --from=builder /app/app/generated ./app/generated
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 
+RUN mkdir -p .next/cache/images && chown -R nextjs:nextjs .next/cache
+
 USER nextjs
 
 EXPOSE 3003
