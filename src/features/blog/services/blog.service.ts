@@ -157,12 +157,8 @@ export function parseBlogPayload(input: unknown) {
 }
 
 export function resolvePublishedAt(status: BlogStatus, value?: string | null) {
-  if (value) {
-    return new Date(value);
-  }
-
   if (status === "publicado") {
-    return new Date();
+    return value ? new Date(value) : new Date();
   }
 
   return null;

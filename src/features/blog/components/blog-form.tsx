@@ -114,6 +114,7 @@ export function BlogForm({ mode, blog }: Props) {
     },
   });
   const contentHtml = useWatch({ control: form.control, name: "contenidoHtml" }) ?? "";
+  const status = useWatch({ control: form.control, name: "status" }) ?? "borrador";
 
   const totalImages = existingImages.length + pendingImages.length;
 
@@ -162,7 +163,7 @@ export function BlogForm({ mode, blog }: Props) {
         }));
 
         if (mode === "create") {
-          const firstResult = await createBlog({ ...values, images: [] });
+          const firstResult = await createBlog({ ...values, status, images: [] });
           if (firstResult.error || !firstResult.id || !firstResult.slug) {
             setError(firstResult.error ?? "No fue posible crear el blog.");
             return;
@@ -173,6 +174,7 @@ export function BlogForm({ mode, blog }: Props) {
           );
           const finalResult = await updateBlog(firstResult.slug, {
             ...values,
+            status,
             slug: firstResult.slug,
             images: uploadedImages,
           });
@@ -194,6 +196,7 @@ export function BlogForm({ mode, blog }: Props) {
         );
         const result = await updateBlog(blog.slug, {
           ...values,
+          status,
           images: [...existingPayload, ...uploadedImages].slice(0, MAX_BLOG_IMAGES),
         });
 
@@ -208,6 +211,8 @@ export function BlogForm({ mode, blog }: Props) {
         setError(submitError instanceof Error ? submitError.message : "No fue posible guardar el blog.");
       }
     });
+  }, () => {
+    setError("Revisa los campos marcados antes de guardar el blog.");
   });
 
   const handleDelete = () => {
@@ -274,7 +279,13 @@ export function BlogForm({ mode, blog }: Props) {
               <select
                 id="status"
                 className="w-full rounded-xl border border-border-soft bg-white px-3 py-2 text-sm outline-none focus:border-brand-secondary"
-                {...form.register("status")}
+                value={status}
+                onChange={(event) =>
+                  form.setValue("status", event.target.value as BlogInput["status"], {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
               >
                 {BLOG_STATUSES.map((status) => (
                   <option key={status} value={status}>
@@ -298,7 +309,7 @@ export function BlogForm({ mode, blog }: Props) {
             <button
               type="submit"
               disabled={isPending}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-text px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-secondary disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-secondary disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               Guardar blog
