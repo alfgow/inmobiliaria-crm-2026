@@ -1,18 +1,20 @@
-import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { ContactSearchModalProvider } from "@/components/dashboard/contact-search-button";
 import { DashboardDesktopChrome } from "@/components/dashboard/dashboard-desktop-chrome";
 import { DashboardMobileDock } from "@/components/dashboard/dashboard-navbar";
-import { verifyToken, SESSION_COOKIE } from "@/lib/session";
+import { getCurrentUser } from "@/features/auth/lib/current-user";
 
 export default async function CrmLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  const user = token ? await verifyToken(token) : null;
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login");
+  }
 
   const isAdmin = user?.role === "admin";
 

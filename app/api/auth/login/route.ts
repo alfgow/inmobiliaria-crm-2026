@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
           name: true,
           email: true,
           role: true,
+          is_active: true,
           password: true,
         },
       }),
@@ -35,6 +36,10 @@ export async function POST(req: NextRequest) {
     );
 
     if (!user) {
+      return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
+    }
+
+    if (!user.is_active) {
       return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
     }
 
