@@ -116,43 +116,75 @@ type Property = {
   coverImageUrl: string | null;
 };
 
-export default async function PropertiesPage() {
+const PAGE_SIZE = 6;
+
+function parsePage(value: string | string[] | undefined) {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const page = Number.parseInt(rawValue ?? "1", 10);
+
+  return Number.isFinite(page) && page > 0 ? page : 1;
+}
+
+function getPageNumbers(currentPage: number, totalPages: number) {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 3) {
+    return [1, 2, 3, 4, "ellipsis", totalPages] as const;
+  }
+
+  if (currentPage >= totalPages - 2) {
+    return [1, "ellipsis", totalPages - 3, totalPages - 2, totalPages - 1, totalPages] as const;
+  }
+
+  return [1, "ellipsis", currentPage - 1, currentPage, currentPage + 1, "ellipsis", totalPages] as const;
+}
+
+type PropertiesPageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function PropertiesPage({ searchParams }: PropertiesPageProps) {
+  const query = await searchParams;
+  const requestedPage = parsePage(query.page);
   let properties: Property[] = [];
   let totalProperties = 0;
+  let currentPage = requestedPage;
   let databaseUnavailable = false;
 
   try {
-    const [rawProperties, count] = await Promise.all([
-      prisma.inmuebles.findMany({
-        orderBy: [{ destacado: "desc" }, { created_at: "desc" }],
-        take: 6,
-        select: {
-          id: true,
-          slug: true,
-          titulo: true,
-          direccion: true,
-          colonia: true,
-          municipio: true,
-          estado: true,
-          codigo_postal: true,
-          precio: true,
-          destacado: true,
-          visible: true,
-          created_at: true,
-          habitaciones: true,
-          banos: true,
-          estacionamientos: true,
-          metros_cuadrados: true,
-          superficie_construida: true,
-          inmueble_estatus: {
-            select: { nombre: true, color: true },
-          },
-        },
-      }),
-      prisma.inmuebles.count(),
-    ]);
+    totalProperties = await prisma.inmuebles.count();
+    const totalPages = Math.max(1, Math.ceil(totalProperties / PAGE_SIZE));
+    currentPage = Math.min(requestedPage, totalPages);
 
-    totalProperties = count;
+    const rawProperties = await prisma.inmuebles.findMany({
+      orderBy: [{ destacado: "desc" }, { created_at: "desc" }],
+      skip: (currentPage - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      select: {
+        id: true,
+        slug: true,
+        titulo: true,
+        direccion: true,
+        colonia: true,
+        municipio: true,
+        estado: true,
+        codigo_postal: true,
+        precio: true,
+        destacado: true,
+        visible: true,
+        created_at: true,
+        habitaciones: true,
+        banos: true,
+        estacionamientos: true,
+        metros_cuadrados: true,
+        superficie_construida: true,
+        inmueble_estatus: {
+          select: { nombre: true, color: true },
+        },
+      },
+    });
 
     // Fetch the first image (por orden) for each property
     const propertyIds = rawProperties.map((p) => p.id.toString());
@@ -193,6 +225,12 @@ export default async function PropertiesPage() {
   }
 
   const totalShown = properties.length;
+  const totalPages = Math.max(1, Math.ceil(totalProperties / PAGE_SIZE));
+  const pageNumbers = getPageNumbers(currentPage, totalPages);
+
+  function pageHref(page: number) {
+    return page === 1 ? "/inmuebles" : `/inmuebles?page=${page}`;
+  }
 
   return (
     <main className="relative isolate min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-brand-base px-4 py-4 text-brand-text sm:px-6 sm:py-6 lg:px-10">
@@ -430,28 +468,64 @@ export default async function PropertiesPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="inline-flex size-10 items-center justify-center rounded-full border border-border-soft bg-white text-brand-text/70 transition hover:border-brand-secondary hover:text-brand-secondary"
-                >
-                  <ChevronLeft className="size-4" />
-                </button>
-                <div className="flex h-10 min-w-10 items-center justify-center rounded-full bg-brand-secondary px-4 text-sm font-semibold text-white">
-                  1
-                </div>
-                <div className="flex h-10 min-w-10 items-center justify-center rounded-full border border-border-soft bg-white px-4 text-sm font-medium text-brand-text/60">
-                  2
-                </div>
-                <div className="flex h-10 min-w-10 items-center justify-center rounded-full border border-border-soft bg-white px-4 text-sm font-medium text-brand-text/60">
-                  3
-                </div>
-                <button
-                  type="button"
-                  className="inline-flex size-10 items-center justify-center rounded-full border border-border-soft bg-white text-brand-text/70 transition hover:border-brand-secondary hover:text-brand-secondary"
-                >
-                  <ChevronRight className="size-4" />
-                </button>
+              <div className="flex items-center gap-2" aria-label="Paginación de inmuebles">
+                {currentPage > 1 ? (
+                  <Link
+                    href={pageHref(currentPage - 1)}
+                    aria-label="Página anterior"
+                    className="inline-flex size-10 items-center justify-center rounded-full border border-border-soft bg-white text-brand-text/70 transition hover:border-brand-secondary hover:text-brand-secondary"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </Link>
+                ) : (
+                  <span
+                    aria-disabled="true"
+                    aria-label="No hay página anterior"
+                    className="inline-flex size-10 items-center justify-center rounded-full border border-border-soft bg-brand-surface text-brand-text/30"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </span>
+                )}
+
+                {pageNumbers.map((page, index) =>
+                  page === "ellipsis" ? (
+                    <span key={`ellipsis-${index}`} className="px-1 text-sm text-brand-text/45" aria-hidden="true">
+                      …
+                    </span>
+                  ) : (
+                    <Link
+                      key={page}
+                      href={pageHref(page)}
+                      aria-current={page === currentPage ? "page" : undefined}
+                      className={[
+                        "flex h-10 min-w-10 items-center justify-center rounded-full px-4 text-sm transition",
+                        page === currentPage
+                          ? "bg-brand-secondary font-semibold text-white"
+                          : "border border-border-soft bg-white font-medium text-brand-text/60 hover:border-brand-secondary hover:text-brand-secondary",
+                      ].join(" ")}
+                    >
+                      {page}
+                    </Link>
+                  ),
+                )}
+
+                {currentPage < totalPages ? (
+                  <Link
+                    href={pageHref(currentPage + 1)}
+                    aria-label="Página siguiente"
+                    className="inline-flex size-10 items-center justify-center rounded-full border border-border-soft bg-white text-brand-text/70 transition hover:border-brand-secondary hover:text-brand-secondary"
+                  >
+                    <ChevronRight className="size-4" />
+                  </Link>
+                ) : (
+                  <span
+                    aria-disabled="true"
+                    aria-label="No hay página siguiente"
+                    className="inline-flex size-10 items-center justify-center rounded-full border border-border-soft bg-brand-surface text-brand-text/30"
+                  >
+                    <ChevronRight className="size-4" />
+                  </span>
+                )}
               </div>
             </div>
           </section>
