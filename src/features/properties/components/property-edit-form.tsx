@@ -71,6 +71,32 @@ const AMENITIES_CATALOG = [
   "Terraza",
 ];
 
+function extractPortalPropertyId(value: string): string | null {
+  const rawUrl = value.trim();
+  if (!/^https?:\/\//i.test(rawUrl)) return null;
+
+  try {
+    const url = new URL(rawUrl);
+    const hostname = url.hostname.toLowerCase();
+    const isVivanuncios =
+      hostname === "vivanuncios.com.mx" || hostname.endsWith(".vivanuncios.com.mx");
+    const isInmuebles24 =
+      hostname === "inmuebles24.com" || hostname.endsWith(".inmuebles24.com");
+
+    if (isVivanuncios) {
+      return url.pathname.match(/(?:^|\/)(\d+)(?:\/?$)/)?.[1] ?? null;
+    }
+
+    if (isInmuebles24) {
+      return url.pathname.match(/-(\d+)\.html\/?$/i)?.[1] ?? null;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface EditableImage {
@@ -549,6 +575,8 @@ export function PropertyEditForm({
     Array.isArray(initialData.tags) ? initialData.tags : [],
   );
   const [tagDraft, setTagDraft] = useState("");
+  const [portalUrlsDraft, setPortalUrlsDraft] = useState("");
+  const [portalUrlsFeedback, setPortalUrlsFeedback] = useState<string | null>(null);
   const [reqDraft, setReqDraft] = useState("");
   const [restrDraft, setRestrDraft] = useState("");
 
@@ -759,6 +787,52 @@ export function PropertyEditForm({
     if (!v) return;
     setter((cur) => (cur.includes(v) ? cur : [...cur, v]));
     clearDraft();
+  };
+
+  const addPortalIds = () => {
+    const entries = portalUrlsDraft
+      .split(/[\s,]+/)
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+
+    if (entries.length === 0) {
+      setPortalUrlsFeedback("Pega al menos una URL de Inmuebles24 o Vivanuncios.");
+      return;
+    }
+
+    const ids: string[] = [];
+    const invalidEntries: string[] = [];
+
+    for (const entry of entries) {
+      const id = extractPortalPropertyId(entry);
+      if (!id) {
+        invalidEntries.push(entry);
+      } else if (!ids.includes(id)) {
+        ids.push(id);
+      }
+    }
+
+    const idsToAdd = ids.filter((id) => !tags.includes(id));
+    const addedCount = idsToAdd.length;
+    setTags((currentTags) => {
+      const currentTagSet = new Set(currentTags);
+      const newIds = idsToAdd.filter((id) => !currentTagSet.has(id));
+      return newIds.length > 0 ? [...currentTags, ...newIds] : currentTags;
+    });
+
+    if (invalidEntries.length > 0) {
+      const invalidLabel = invalidEntries.length === 1 ? "URL no reconocida" : "URLs no reconocidas";
+      setPortalUrlsFeedback(
+        `${addedCount} ${addedCount === 1 ? "ID agregado" : "IDs agregados"}. ${invalidLabel}: ${invalidEntries.join(", ")}`,
+      );
+    } else {
+      setPortalUrlsDraft("");
+      setPortalUrlsFeedback(
+        addedCount > 0
+          ? `${addedCount} ${addedCount === 1 ? "ID agregado" : "IDs agregados"} a los tags.`
+          : "Los IDs ya estaban agregados en los tags.",
+      );
+    }
   };
 
   function parseCoordinate(value: string): number | null {
@@ -1053,6 +1127,31 @@ export function PropertyEditForm({
               onAdd={() => addUnique(tagDraft, setTags, () => setTagDraft(""))}
               placeholder="Ej: frente al mar, remodelado, piscina"
             />
+            <div className="flex flex-col gap-2">
+              <FieldLabel label="IDs desde portales" hint="Una o varias URLs" />
+              <textarea
+                value={portalUrlsDraft}
+                onChange={(event) => {
+                  setPortalUrlsDraft(event.target.value);
+                  setPortalUrlsFeedback(null);
+                }}
+                className={`${inputCls} min-h-24 resize-y`}
+                placeholder="Pega URLs de Inmuebles24 o Vivanuncios separadas por comas o saltos de línea"
+                aria-label="URLs de Inmuebles24 o Vivanuncios"
+              />
+              <button
+                type="button"
+                onClick={addPortalIds}
+                className="self-start rounded-xl border border-border-soft bg-white px-3.5 py-2 text-xs font-medium text-brand-text/70 shadow-sm transition hover:border-brand-secondary hover:text-brand-secondary"
+              >
+                Agregar IDs a tags
+              </button>
+              {portalUrlsFeedback && (
+                <p className="text-xs text-brand-text/55" role="status">
+                  {portalUrlsFeedback}
+                </p>
+              )}
+            </div>
             {tags.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag, i) => (
